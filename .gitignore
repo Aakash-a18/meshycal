@@ -1,0 +1,66 @@
+# === Secrets and local config (NEVER commit) ===
+.env
+.env.local
+.env.*.local
+local-secrets/
+local-data/
+*.key
+*.pem
+!*.pub
+
+# === Synthetic test data (if accidentally generated outside local-data/) ===
+**/synthetic-calendar.json
+
+# === Node / TypeScript (likely UI stack) ===
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+out/
+.vercel/
+*.tsbuildinfo
+
+# === Python (likely agent stack) ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# === Mobile (React Native or equivalent, if used) ===
+*.ipa
+*.apk
+*.aab
+ios/Pods/
+android/app/build/
+android/.gradle/
+
+# === IDEs ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Logs ===
+*.log
+logs/
