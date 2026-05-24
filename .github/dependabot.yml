@@ -1,0 +1,33 @@
+# Dependabot config — see notes in mesherra/.github/dependabot.yml.
+#
+# MeshyCal-specific caveat: pyproject.toml has `mesherra = { path = "../mesherra",
+# editable = true }` under [tool.uv.sources]. Dependabot will not (and must not)
+# bump that local-path dep; it only watches PyPI-resolvable entries in
+# [project.dependencies]. mesherra version coordination across the two repos is
+# manual until either (a) mesherra is published to PyPI, or (b) we pin to a
+# specific git ref under [tool.uv.sources].
+
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci(deps)"
