@@ -1,0 +1,51 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # MeshyCal depends on mesherra via a local path in [tool.uv.sources]:
+      #     mesherra = { path = "../mesherra", editable = true }
+      # We check both repos out side-by-side so that path resolves on CI.
+      # mesherra is pinned to its default branch here; if you ever need to
+      # CI a MeshyCal branch against a specific mesherra branch, add a
+      # workflow_dispatch input or coordinate via shared branch names.
+      - name: Check out mesherra (sibling repo)
+        uses: actions/checkout@v4
+        with:
+          repository: Aakash-a18/mesherra
+          path: mesherra
+
+      - name: Check out meshycal
+        uses: actions/checkout@v4
+        with:
+          path: meshycal
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install MeshyCal dependencies (resolves ../mesherra path-dep)
+        working-directory: meshycal
+        run: uv sync --extra dev
+
+      - name: Run MeshyCal test suite
+        working-directory: meshycal
+        run: uv run pytest --no-header -q
