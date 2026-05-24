@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "meshycal.scheduling/proposal-v1",
+  "title": "MeshyCal Scheduling Proposal v1",
+  "description": "Candidate meeting time slots proposed by one MeshyCal scheduling agent to another. Carries only candidate timestamps and duration; never carries calendar contents, titles, or attendee identities.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidates", "duration_minutes"],
+  "properties": {
+    "candidates": {
+      "description": "Proposed meeting start times in UTC (ISO 8601). Ordered by sender preference.",
+      "type": "array",
+      "items": { "type": "string", "format": "date-time" },
+      "minItems": 1,
+      "maxItems": 10,
+      "uniqueItems": true
+    },
+    "duration_minutes": {
+      "description": "Desired meeting duration in whole minutes.",
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 480
+    }
+  }
+}

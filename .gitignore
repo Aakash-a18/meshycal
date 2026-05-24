@@ -64,3 +64,7 @@ desktop.ini
 # === Logs ===
 *.log
 logs/
+
+# === Demo orchestrator output ===
+# run_demo.py writes ledgers + payload sidecars + calendar fixtures here
+demo-data/
