@@ -24,10 +24,18 @@ from pathlib import Path
 
 import json
 
+import httpx
+
 from mesherra.crypto.primitives import (
+    Signer,
     Verifier,
     canonical_json,
     content_hash,
+)
+from mesherra.identity import (
+    DirectoryStore,
+    HTTPDirectoryClient,
+    start_directory_listener,
 )
 from mesherra.models.primitives import ActionType, Operation, Residue
 from mesherra.provenance.ledger import ProvenanceLedger
@@ -96,37 +104,98 @@ async def run_demo(
     data_dir.mkdir(parents=True, exist_ok=True)
     _clean_prior_run(data_dir)
 
-    cal_a_path = _generate_calendar_fixture(
-        owner_id=principal_a_id, reference_time=now, seed=1, dest_dir=data_dir
-    )
-    cal_b_path = _generate_calendar_fixture(
-        owner_id=principal_b_id, reference_time=now, seed=99, dest_dir=data_dir
+    # Phase 2 sub-step 4: bring up a live signed Directory. The orchestrator
+    # owns the Directory's lifecycle (boot → register → run → teardown).
+    # In a real deployment the Directory would be its own long-running
+    # service; here in the demo it lives inside the same Python process.
+    directory_signer = Signer.generate()
+    directory_store = DirectoryStore(db_path=data_dir / "directory.sqlite")
+    directory_handle = await start_directory_listener(
+        host=host,
+        port=0,
+        store=directory_store,
+        signer=directory_signer,
     )
 
-    pair = build_agent_pair(
-        principal_a_id=principal_a_id,
-        principal_b_id=principal_b_id,
-        ledger_dir=data_dir,
-    )
-    chosen_port = port_b or _free_port(host)
+    directory_a: HTTPDirectoryClient | None = None
+    directory_b: HTTPDirectoryClient | None = None
 
-    listener = await configure_agent_b(
-        mesherra=pair.agent_b,
-        calendar_path=cal_b_path,
-        listener_host=host,
-        listener_port=chosen_port,
-        reference_time=now,
-    )
     try:
-        run_a = await run_agent_a(
-            mesherra=pair.agent_a,
-            peer_url=f"http://{host}:{chosen_port}/",
-            peer_principal_id=principal_b_id,
-            calendar_path=cal_a_path,
+        # Generate the two agents' signers BEFORE wiring so we can publish
+        # their public keys to the Directory before any peer lookup.
+        signer_a = Signer.generate()
+        signer_b = Signer.generate()
+
+        async with httpx.AsyncClient(timeout=10.0) as http:
+            for pid, sgn in (
+                (principal_a_id, signer_a),
+                (principal_b_id, signer_b),
+            ):
+                resp = await http.post(
+                    f"{directory_handle.url}/principals",
+                    json={
+                        "principal_id": pid,
+                        "public_key_b64": sgn.public_key_b64(),
+                    },
+                )
+                resp.raise_for_status()
+
+        # Per-agent HTTPDirectoryClient instances — each carries its own
+        # connection pool (and future per-agent auth). Both pin the same
+        # operator-published Directory public key.
+        directory_a = HTTPDirectoryClient(
+            base_url=directory_handle.url,
+            directory_public_key_b64=directory_signer.public_key_b64(),
+        )
+        directory_b = HTTPDirectoryClient(
+            base_url=directory_handle.url,
+            directory_public_key_b64=directory_signer.public_key_b64(),
+        )
+
+        cal_a_path = _generate_calendar_fixture(
+            owner_id=principal_a_id, reference_time=now, seed=1, dest_dir=data_dir
+        )
+        cal_b_path = _generate_calendar_fixture(
+            owner_id=principal_b_id, reference_time=now, seed=99, dest_dir=data_dir
+        )
+
+        pair = build_agent_pair(
+            principal_a_id=principal_a_id,
+            principal_b_id=principal_b_id,
+            ledger_dir=data_dir,
+            signer_a=signer_a,
+            signer_b=signer_b,
+            directory_a=directory_a,
+            directory_b=directory_b,
+        )
+        chosen_port = port_b or _free_port(host)
+
+        listener = await configure_agent_b(
+            mesherra=pair.agent_b,
+            calendar_path=cal_b_path,
+            listener_host=host,
+            listener_port=chosen_port,
             reference_time=now,
         )
+        try:
+            run_a = await run_agent_a(
+                mesherra=pair.agent_a,
+                peer_url=f"http://{host}:{chosen_port}/",
+                peer_principal_id=principal_b_id,
+                calendar_path=cal_a_path,
+                reference_time=now,
+            )
+        finally:
+            await listener.stop()
     finally:
-        await listener.stop()
+        # Tear down the Directory after the demo finishes. Per-agent HTTP
+        # clients first, then the listener, then the store.
+        if directory_a is not None:
+            await directory_a.aclose()
+        if directory_b is not None:
+            await directory_b.aclose()
+        await directory_handle.stop()
+        directory_store.close()
 
     # Persist payload sidecars (SPEC §5 #13). The Residue stores only
     # payload_hash; the *bytes* must live somewhere disk-side so the

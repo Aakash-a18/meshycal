@@ -51,12 +51,17 @@ class TestRunDemoHappyPath:
 
     async def test_ledger_files_persist_after_run(self, tmp_path: Path) -> None:
         """The cold-reload contract requires the SQLite files to still exist
-        after the orchestrator returns — the test could re-open them itself."""
+        after the orchestrator returns — the test could re-open them itself.
+
+        Phase 2 sub-step 4: the orchestrator also writes a ``directory.sqlite``
+        for the live Directory service; we check the two agent ledgers
+        specifically rather than counting all SQLite files.
+        """
         await run_demo(data_dir=tmp_path, reference_time=_REF)
-        sqlite_files = list(tmp_path.glob("*.sqlite"))
-        assert len(sqlite_files) == 2, (
-            f"expected 2 ledger files in {tmp_path}, got {sqlite_files}"
-        )
+        ledger_a = tmp_path / "user-a_phase1_local.sqlite"
+        ledger_b = tmp_path / "user-b_phase1_local.sqlite"
+        assert ledger_a.is_file(), f"A's ledger missing at {ledger_a}"
+        assert ledger_b.is_file(), f"B's ledger missing at {ledger_b}"
 
     async def test_calendar_fixtures_written_to_data_dir(self, tmp_path: Path) -> None:
         await run_demo(data_dir=tmp_path, reference_time=_REF)

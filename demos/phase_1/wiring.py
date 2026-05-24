@@ -5,7 +5,10 @@ Each scheduling agent needs a fully-wired ``Mesherra`` instance:
 * an Ed25519 signer (one keypair per principal)
 * a per-principal SQLite ``ProvenanceLedger``
 * a per-principal ``A2AAdapter``
-* a ``public_key_directory`` that knows BOTH peers' published public keys
+* a ``DirectoryClient`` that resolves BOTH peers' published public keys
+  (Phase 2 sub-step 1: a single shared ``StaticDirectoryClient``;
+  Phase 2 sub-step 4: per-agent ``HTTPDirectoryClient`` pointing at a
+  live Directory service)
 
 The directory is symmetric — each side needs the other side's public key to
 verify the peer's SendClaim signatures, plus its own (the verifier path
@@ -29,6 +32,7 @@ from pathlib import Path
 from mesherra import Mesherra
 from mesherra.a2a_adapter import A2AAdapter
 from mesherra.crypto.primitives import Signer
+from mesherra.identity import DirectoryClient, StaticDirectoryClient
 from mesherra.provenance.ledger import ProvenanceLedger
 
 
@@ -58,6 +62,8 @@ def build_agent_pair(
     ledger_dir: Path,
     signer_a: Signer | None = None,
     signer_b: Signer | None = None,
+    directory_a: DirectoryClient | None = None,
+    directory_b: DirectoryClient | None = None,
 ) -> PairedAgents:
     """Wire up two Mesherra instances ready to talk to each other.
 
@@ -71,6 +77,16 @@ def build_agent_pair(
             a fresh keypair is generated. Tests may pass a fixed signer for
             determinism; the demo just calls without it.
         signer_b: Same, for B.
+        directory_a: Optional :class:`DirectoryClient` for agent A. If both
+            ``directory_a`` and ``directory_b`` are omitted, the helper
+            falls back to the Phase 1 path: a single shared
+            :class:`StaticDirectoryClient` constructed from the two
+            signers' public keys. The orchestrator (run_demo.py) supplies
+            per-agent ``HTTPDirectoryClient`` instances pointing at a live
+            Directory service after Phase 2 sub-step 4.
+        directory_b: Same, for B. If one of ``directory_a`` / ``directory_b``
+            is supplied the other must be too — mixed wiring (one live,
+            one static) is a programming error.
 
     Returns:
         A :class:`PairedAgents` carrying both wired Mesherra handles plus the
@@ -78,9 +94,8 @@ def build_agent_pair(
 
     Raises:
         FileNotFoundError: ``ledger_dir`` does not exist.
-        ValueError: the two principal ids are identical (a one-principal
-            two-ledger setup is a programming error here — symmetric
-            assembly assumes two distinct principals).
+        ValueError: the two principal ids are identical, or only one of
+            ``directory_a`` / ``directory_b`` was supplied.
     """
     if principal_a_id == principal_b_id:
         raise ValueError(
@@ -93,17 +108,38 @@ def build_agent_pair(
             f"ledger_dir {ledger_dir!s} does not exist. The orchestrator "
             "is expected to create the demo's data root before wiring."
         )
+    if (directory_a is None) != (directory_b is None):
+        raise ValueError(
+            "directory_a and directory_b must both be provided or both omitted. "
+            "Mixed live/static wiring is a programming error."
+        )
 
     signer_a = signer_a or Signer.generate()
     signer_b = signer_b or Signer.generate()
 
     # Symmetric public-key directory: each side carries both peers'
-    # published public keys. The verifier resolves whichever principal_id
-    # is on the SendClaim being checked.
-    directory = {
+    # published public keys. Kept on PairedAgents as a snapshot for the
+    # orchestrator's cold-reload verification path, which re-verifies
+    # signed Residue entries directly without going through the SDK.
+    directory_map = {
         principal_a_id: signer_a.public_key_b64(),
         principal_b_id: signer_b.public_key_b64(),
     }
+
+    # Phase 2 sub-step 1+4: the gateways consume a DirectoryClient interface
+    # rather than a raw dict. Two paths:
+    #
+    # * directory_a / directory_b NOT provided → fall back to the Phase 1
+    #   path: a single shared StaticDirectoryClient. Fine because the
+    #   static client is stateless after construction.
+    # * directory_a / directory_b provided → orchestrator built per-agent
+    #   HTTPDirectoryClient instances pointing at a live Directory.
+    #   Per-agent because the HTTP client carries per-instance state
+    #   (connection pool, future auth tokens).
+    if directory_a is None:
+        shared_static = StaticDirectoryClient(directory_map)
+        directory_a = shared_static
+        directory_b = shared_static
 
     ledger_path_a = ledger_dir / f"{_safe(principal_a_id)}.sqlite"
     ledger_path_b = ledger_dir / f"{_safe(principal_b_id)}.sqlite"
@@ -116,14 +152,14 @@ def build_agent_pair(
         signer=signer_a,
         ledger=ledger_a,
         adapter=A2AAdapter(),
-        public_key_directory=directory,
+        directory=directory_a,
     )
     agent_b = Mesherra(
         principal_id=principal_b_id,
         signer=signer_b,
         ledger=ledger_b,
         adapter=A2AAdapter(),
-        public_key_directory=directory,
+        directory=directory_b,
     )
 
     return PairedAgents(
@@ -133,7 +169,7 @@ def build_agent_pair(
         signer_b=signer_b,
         ledger_path_a=ledger_path_a,
         ledger_path_b=ledger_path_b,
-        public_key_directory=directory,
+        public_key_directory=directory_map,
     )
 
 

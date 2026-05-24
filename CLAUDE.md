@@ -41,8 +41,10 @@ Pre-alpha. Documentation-first. No production code yet.
 Phase 1 of Mesherra ships provenance (per `../mesherra/docs/ARCHITECTURE.md` section 12). MeshyCal's first deliverable is the corresponding demo: two scheduling agents on localhost, hardcoded identities, deterministic slot picking (no LLM), exchanging signed proposals and producing matching residue entries.
 
 Subsequent MeshyCal work tracks Mesherra's build order:
-- Phase 1 (Mesherra provenance) → MeshyCal localhost two-agent demo
-- Phase 2 (Mesherra identity) → MeshyCal cross-machine with verified principals
+- Phase 1 (Mesherra provenance) → MeshyCal localhost two-agent demo ✅ shipped
+- Phase 2 (Mesherra identity, shipped in two slices)
+    - 2a: replay-defense hardening of Phase 1 (nonce + clock-skew + ledger dedup) ✅ shipped
+    - 2b: live signed Directory in the demo loop (in-process; cross-machine would work with the same `HTTPDirectoryClient` unchanged but is not exercised here) ✅ shipped
 - Phase 3 (Mesherra scoped disclosure) → MeshyCal with the actual product punch (field-level policy stripping calendar titles)
 
 The invitee experience (frictionless guest principal for the second user) is the hardest MeshyCal problem and is deferred to Phase 1.5 per Mesherra's open design questions.

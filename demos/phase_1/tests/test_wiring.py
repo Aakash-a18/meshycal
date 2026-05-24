@@ -52,13 +52,16 @@ class TestBuildAgentPair:
             principal_b_id=_B_ID,
             ledger_dir=tmp_path,
         )
-        # Same dict identity is fine, but the contents must include both.
-        # Use the private attr only for this invariant check — production
-        # code never reaches in like this.
+        # Both agents share the same StaticDirectoryClient instance per
+        # wiring.py; assert via the client's `known_principals` accessor
+        # (the public API for this kind of "what does this directory know"
+        # introspection in tests / demos). Use the private attr only to
+        # reach the client — production code never does this.
         for agent in (pair.agent_a, pair.agent_b):
-            directory = agent._public_key_directory  # type: ignore[attr-defined]
-            assert _A_ID in directory
-            assert _B_ID in directory
+            directory = agent._directory  # type: ignore[attr-defined]
+            known = directory.known_principals()
+            assert _A_ID in known
+            assert _B_ID in known
 
     def test_ledger_files_are_per_principal(self, tmp_path: Path) -> None:
         pair = build_agent_pair(
