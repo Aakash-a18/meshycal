@@ -21,6 +21,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import json
 
@@ -38,10 +39,12 @@ from mesherra.identity import (
     start_directory_listener,
 )
 from mesherra.models.primitives import ActionType, Operation, Residue
+from mesherra.policy import PolicyStore, sign_policy_doc
 from mesherra.provenance.ledger import ProvenanceLedger
 
 from agent_a import run_agent_a
 from agent_b import configure_agent_b
+from policy_template import build_default_meshycal_policy
 from synthetic_calendar import generate_calendar, write_calendar
 from wiring import build_agent_pair
 
@@ -122,9 +125,37 @@ async def run_demo(
 
     try:
         # Generate the two agents' signers BEFORE wiring so we can publish
-        # their public keys to the Directory before any peer lookup.
+        # their public keys to the Directory before any peer lookup AND
+        # bind PolicyStores to those keys for signature verification.
         signer_a = Signer.generate()
         signer_b = Signer.generate()
+
+        # Phase 3 sub-step 5: per-principal PolicyStores, signed with each
+        # agent's own key. The default MeshyCal template blocks
+        # calendar_titles + attendee_emails outbound; the demo proves
+        # those fields never cross the wire.
+        policy_store_a = PolicyStore(
+            db_path=data_dir / f"{_safe_principal(principal_a_id)}_policy.sqlite",
+            principal_id=principal_a_id,
+            public_key_b64=signer_a.public_key_b64(),
+        )
+        policy_store_b = PolicyStore(
+            db_path=data_dir / f"{_safe_principal(principal_b_id)}_policy.sqlite",
+            principal_id=principal_b_id,
+            public_key_b64=signer_b.public_key_b64(),
+        )
+        policy_store_a.save_signed(
+            sign_policy_doc(
+                doc=build_default_meshycal_policy(principal_id=principal_a_id),
+                signer=signer_a,
+            )
+        )
+        policy_store_b.save_signed(
+            sign_policy_doc(
+                doc=build_default_meshycal_policy(principal_id=principal_b_id),
+                signer=signer_b,
+            )
+        )
 
         async with httpx.AsyncClient(timeout=10.0) as http:
             for pid, sgn in (
@@ -167,6 +198,8 @@ async def run_demo(
             signer_b=signer_b,
             directory_a=directory_a,
             directory_b=directory_b,
+            policy_store_a=policy_store_a,
+            policy_store_b=policy_store_b,
         )
         chosen_port = port_b or _free_port(host)
 
@@ -188,24 +221,38 @@ async def run_demo(
         finally:
             await listener.stop()
     finally:
-        # Tear down the Directory after the demo finishes. Per-agent HTTP
-        # clients first, then the listener, then the store.
+        # Tear down per-agent resources: HTTP clients, then the directory
+        # listener and store, then per-agent policy stores. Order matters
+        # only in that the listener should stop before the store it talks
+        # to closes; policy stores are independent and can close after.
         if directory_a is not None:
             await directory_a.aclose()
         if directory_b is not None:
             await directory_b.aclose()
         await directory_handle.stop()
         directory_store.close()
+        try:
+            policy_store_a.close()
+            policy_store_b.close()
+        except UnboundLocalError:
+            # Construction failure before the stores were created.
+            pass
 
     # Persist payload sidecars (SPEC §5 #13). The Residue stores only
     # payload_hash; the *bytes* must live somewhere disk-side so the
     # cold-reload assertion can prove "the accepted slot was actually one
-    # A proposed" without trusting in-process state. We write both the
-    # proposal A sent and the acceptance B returned. Each is named by its
-    # content_hash so the assertion can look up by hash from the ledger.
+    # A proposed" without trusting in-process state.
+    #
+    # Phase 3: we sidecar the *scoped* proposal — i.e., what actually
+    # crossed the wire — because that's what A's emit Residue's
+    # payload_hash references. The rich pre-scope payload is NEVER
+    # sidecared: the demo's whole proposition is that the blocked fields
+    # don't escape, and persisting them to disk in this directory would
+    # contradict that even if no one ever reads them.
     payloads_dir = data_dir / "payloads"
     payloads_dir.mkdir(parents=True, exist_ok=True)
-    _write_payload(payloads_dir, run_a.proposal)
+    scoped_proposal = _strip_blocked_fields(run_a.proposal)
+    _write_payload(payloads_dir, scoped_proposal)
     _write_payload(payloads_dir, run_a.outbound.response_payload)
 
     # Cold reload — SPEC §5 assertion 14 explicitly requires the ledgers be
@@ -222,6 +269,13 @@ async def run_demo(
     a_entries = ledger_a_cold.get_by_task(run_a.outbound.task_id)
     b_entries = ledger_b_cold.get_by_task(run_a.outbound.task_id)
 
+    # Phase 3 #15 / #16: compare A's emit hash against both the scoped
+    # bytes (what should have crossed) and the rich bytes (what would
+    # have crossed if A's airlock did nothing). ``scoped_proposal`` was
+    # already computed above for the sidecar write.
+    scoped_proposal_hash = content_hash(canonical_json(scoped_proposal))
+    rich_proposal_hash = content_hash(canonical_json(run_a.proposal))
+
     assertions = _evaluate_assertions(
         a_entries=a_entries,
         b_entries=b_entries,
@@ -229,6 +283,8 @@ async def run_demo(
         ledger_a=ledger_a_cold,
         ledger_b=ledger_b_cold,
         payloads_dir=payloads_dir,
+        scoped_proposal_hash=scoped_proposal_hash,
+        rich_proposal_hash=rich_proposal_hash,
     )
     return DemoResult(
         task_id=run_a.outbound.task_id,
@@ -248,8 +304,16 @@ def _evaluate_assertions(
     ledger_a: ProvenanceLedger,
     ledger_b: ProvenanceLedger,
     payloads_dir: Path,
+    scoped_proposal_hash: str | None = None,
+    rich_proposal_hash: str | None = None,
 ) -> list[AssertionResult]:
-    """Run all 14 SPEC §5 checks against the cold-loaded ledger entries."""
+    """Run all SPEC §5 checks (Phase 1 #1–14 + Phase 3 #15–16) against the
+    cold-loaded ledger entries.
+
+    Phase 3 hashes are optional so non-Phase-3 callers (Phase 1/2 tests
+    that bypass policy) can omit them; the #15/#16 checks are skipped
+    in that case.
+    """
     results: list[AssertionResult] = []
 
     # --- Per-ledger structural (1–4 against each side) ---
@@ -323,7 +387,144 @@ def _evaluate_assertions(
         )
     )
 
+    # --- Phase 3 scoped disclosure (15, 16) ---
+    if scoped_proposal_hash is not None and rich_proposal_hash is not None:
+        results.append(
+            _check_outbound_scoping_happened(
+                a_emit=a_emit,
+                scoped_hash=scoped_proposal_hash,
+                rich_hash=rich_proposal_hash,
+                all_entries=a_entries + b_entries,
+                number=15,
+            )
+        )
+        results.append(
+            _check_b_received_only_scoped_bytes(
+                b_receive=b_receive,
+                scoped_hash=scoped_proposal_hash,
+                rich_hash=rich_proposal_hash,
+                number=16,
+            )
+        )
+
     return results
+
+
+def _check_outbound_scoping_happened(
+    *,
+    a_emit: Residue | None,
+    scoped_hash: str,
+    rich_hash: str,
+    all_entries: list[Residue],
+    number: int,
+) -> AssertionResult:
+    """SPEC §8 #15 — A's outbound airlock stripped the blocked fields.
+
+    Two clauses, both must hold:
+    1. A's emit Residue's ``payload_hash`` equals SHA-256(JCS(scoped_payload)).
+       If it equals the rich-payload hash, A's airlock did nothing.
+    2. The rich-payload hash appears *nowhere* in either ledger — proof
+       that the unstripped bytes never crossed the wire and never got
+       hashed into provenance.
+    """
+    name = "Outbound scoping happened: A's emit hash matches the post-scope hash, rich hash is absent"
+    if a_emit is None:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail="A's emit residue missing",
+        )
+    if a_emit.payload_hash == rich_hash:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail=(
+                f"A's emit hash equals the rich-payload hash {rich_hash[:16]}..., "
+                "which means the outbound airlock did NOT strip blocked fields."
+            ),
+        )
+    if a_emit.payload_hash != scoped_hash:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail=(
+                f"A's emit hash {a_emit.payload_hash[:16]}... matches neither the "
+                f"scoped hash {scoped_hash[:16]}... nor the rich hash "
+                f"{rich_hash[:16]}.... Possible policy template mismatch."
+            ),
+        )
+    leaked = [
+        e for e in all_entries if e.payload_hash == rich_hash
+    ]
+    if leaked:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail=(
+                f"Rich-payload hash {rich_hash[:16]}... leaked into "
+                f"{len(leaked)} ledger entries; expected zero."
+            ),
+        )
+    return AssertionResult(
+        number=number, name=name, passed=True,
+        detail=(
+            f"A's emit hash equals scoped hash {scoped_hash[:16]}...; "
+            f"rich-payload hash {rich_hash[:16]}... appears in 0 ledger entries"
+        ),
+    )
+
+
+def _check_b_received_only_scoped_bytes(
+    *,
+    b_receive: Residue | None,
+    scoped_hash: str,
+    rich_hash: str,
+    number: int,
+) -> AssertionResult:
+    """SPEC §8 #16 — B's receive Residue references the scoped bytes only.
+
+    The wire-bytes-hashing invariant from sub-step 4 means B's receive
+    hash IS the hash of whatever crossed the wire. If A stripped, this
+    is the scoped hash; if A didn't, it'd be the rich hash. Asserting
+    scoped is direct proof that B never saw the blocked fields.
+    """
+    name = "B's receive Residue references the scoped payload (B never saw blocked fields)"
+    if b_receive is None:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail="B's receive residue missing",
+        )
+    if b_receive.payload_hash == rich_hash:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail=(
+                f"B's receive hash equals the rich-payload hash "
+                f"{rich_hash[:16]}..., which means B received the un-scoped bytes."
+            ),
+        )
+    if b_receive.payload_hash != scoped_hash:
+        return AssertionResult(
+            number=number, name=name, passed=False,
+            detail=(
+                f"B's receive hash {b_receive.payload_hash[:16]}... matches "
+                f"neither scoped {scoped_hash[:16]}... nor rich {rich_hash[:16]}...."
+            ),
+        )
+    return AssertionResult(
+        number=number, name=name, passed=True,
+        detail=(
+            f"B's receive hash equals scoped hash {scoped_hash[:16]}...; "
+            "wire-bytes-only invariant from inbound gateway holds"
+        ),
+    )
+
+
+def _strip_blocked_fields(rich_payload: dict[str, Any]) -> dict[str, Any]:
+    """Compute what A's outbound payload should look like after the default
+    MeshyCal policy applies its outbound_block + outbound_allow rules.
+
+    The orchestrator does this independently of the engine so the #15
+    assertion proves the engine and the orchestrator agree on the scoped
+    bytes — if either were buggy the hashes would diverge.
+    """
+    allowed = {"candidates", "duration_minutes", "constraint_hints"}
+    return {k: v for k, v in rich_payload.items() if k in allowed}
 
 
 def _check_two_entries(side: str, entries: list[Residue], number: int) -> AssertionResult:
@@ -705,6 +906,12 @@ def _generate_calendar_fixture(
     path = dest_dir / f"{safe}_calendar.json"
     write_calendar(cal, path)
     return path
+
+
+def _safe_principal(principal_id: str) -> str:
+    """Same filename-safe mapping wiring._safe uses, so policy SQLite
+    files end up beside the agent ledger SQLite files in data_dir."""
+    return principal_id.replace("@", "_").replace(".", "_").replace("/", "_")
 
 
 def _free_port(host: str) -> int:

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "meshycal.scheduling/proposal-v1",
   "title": "MeshyCal Scheduling Proposal v1",
-  "description": "Candidate meeting time slots proposed by one MeshyCal scheduling agent to another. Carries only candidate timestamps and duration; never carries calendar contents, titles, or attendee identities.",
+  "description": "Candidate meeting time slots proposed by one MeshyCal scheduling agent to another. Phase 3 adds additive optional fields (calendar_titles, attendee_emails, constraint_hints) per ARCH §8.5 — these are present in a sender's internal payload but stripped by the sender's user-signed policy before crossing the wire.",
   "type": "object",
   "additionalProperties": false,
   "required": ["candidates", "duration_minutes"],
@@ -20,6 +20,32 @@
       "type": "integer",
       "minimum": 5,
       "maximum": 480
+    },
+    "calendar_titles": {
+      "description": "(Phase 3) Sender's own calendar entry titles for context. ALWAYS blocked outbound by the default MeshyCal policy; present here only so internal agents can carry it through their own scoping check.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "attendee_emails": {
+      "description": "(Phase 3) Email addresses of the sender's existing attendees. ALWAYS blocked outbound by the default MeshyCal policy.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "constraint_hints": {
+      "description": "(Phase 3) Soft scheduling constraints the sender is willing to share. Allowed outbound by the default MeshyCal policy.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tz": { "type": "string" },
+        "preferred_window": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "start_hour": { "type": "integer", "minimum": 0, "maximum": 23 },
+            "end_hour":   { "type": "integer", "minimum": 0, "maximum": 23 }
+          }
+        }
+      }
     }
   }
 }

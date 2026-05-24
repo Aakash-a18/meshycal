@@ -33,6 +33,7 @@ from mesherra import Mesherra
 from mesherra.a2a_adapter import A2AAdapter
 from mesherra.crypto.primitives import Signer
 from mesherra.identity import DirectoryClient, StaticDirectoryClient
+from mesherra.policy import PolicyStore
 from mesherra.provenance.ledger import ProvenanceLedger
 
 
@@ -53,6 +54,10 @@ class PairedAgents:
     ledger_path_a: Path
     ledger_path_b: Path
     public_key_directory: dict[str, str]
+    # Phase 3: per-principal PolicyStores (None when bypass mode is
+    # active — e.g., Phase 1/2 tests that do not exercise scoping).
+    policy_store_a: PolicyStore | None
+    policy_store_b: PolicyStore | None
 
 
 def build_agent_pair(
@@ -64,6 +69,8 @@ def build_agent_pair(
     signer_b: Signer | None = None,
     directory_a: DirectoryClient | None = None,
     directory_b: DirectoryClient | None = None,
+    policy_store_a: PolicyStore | None = None,
+    policy_store_b: PolicyStore | None = None,
 ) -> PairedAgents:
     """Wire up two Mesherra instances ready to talk to each other.
 
@@ -113,6 +120,12 @@ def build_agent_pair(
             "directory_a and directory_b must both be provided or both omitted. "
             "Mixed live/static wiring is a programming error."
         )
+    if (policy_store_a is None) != (policy_store_b is None):
+        raise ValueError(
+            "policy_store_a and policy_store_b must both be provided or both "
+            "omitted. Mixed enforcement (one enforcing, one bypassing) is a "
+            "programming error and would break the demo's symmetric proof."
+        )
 
     signer_a = signer_a or Signer.generate()
     signer_b = signer_b or Signer.generate()
@@ -153,6 +166,7 @@ def build_agent_pair(
         ledger=ledger_a,
         adapter=A2AAdapter(),
         directory=directory_a,
+        policy_store=policy_store_a,
     )
     agent_b = Mesherra(
         principal_id=principal_b_id,
@@ -160,6 +174,7 @@ def build_agent_pair(
         ledger=ledger_b,
         adapter=A2AAdapter(),
         directory=directory_b,
+        policy_store=policy_store_b,
     )
 
     return PairedAgents(
@@ -170,6 +185,8 @@ def build_agent_pair(
         ledger_path_a=ledger_path_a,
         ledger_path_b=ledger_path_b,
         public_key_directory=directory_map,
+        policy_store_a=policy_store_a,
+        policy_store_b=policy_store_b,
     )
 
 

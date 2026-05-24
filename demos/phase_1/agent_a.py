@@ -95,9 +95,27 @@ async def run_agent_a(
             "renegotiate scope."
         )
 
+    # Phase 3: A's *internal* proposal payload also carries calendar
+    # titles, attendee emails, and constraint hints — the kind of context
+    # a real scheduling agent would have access to internally. The
+    # default MeshyCal outbound policy blocks calendar_titles and
+    # attendee_emails; only candidates, duration_minutes, and
+    # constraint_hints cross the wire. These literals stand in for what
+    # a real agent would derive from its full calendar context.
     proposal: dict[str, Any] = {
         "candidates": candidates,
         "duration_minutes": duration_minutes,
+        "calendar_titles": [
+            "synthetic-team-sync",
+            "synthetic-1-on-1",
+        ],
+        "attendee_emails": [
+            "synthetic-attendee@example.invalid",
+        ],
+        "constraint_hints": {
+            "tz": "UTC",
+            "preferred_window": {"start_hour": 9, "end_hour": 17},
+        },
     }
     outbound = await mesherra.send_to(
         peer_url=peer_url,

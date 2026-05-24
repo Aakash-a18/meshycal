@@ -45,6 +45,6 @@ Subsequent MeshyCal work tracks Mesherra's build order:
 - Phase 2 (Mesherra identity, shipped in two slices)
     - 2a: replay-defense hardening of Phase 1 (nonce + clock-skew + ledger dedup) ✅ shipped
     - 2b: live signed Directory in the demo loop (in-process; cross-machine would work with the same `HTTPDirectoryClient` unchanged but is not exercised here) ✅ shipped
-- Phase 3 (Mesherra scoped disclosure) → MeshyCal with the actual product punch (field-level policy stripping calendar titles)
+- Phase 3 (Mesherra scoped disclosure) ✅ shipped. Per-principal signed PolicyStore wired into both gateways; default MeshyCal template blocks `calendar_titles` + `attendee_emails` outbound. Demo's SPEC §5 assertions #15 and #16 prove A's emit Residue and B's receive Residue both reference the scoped hash, and the rich-payload hash appears in zero ledger entries. Force-injection regression (#17) lives in `demos/phase_1/tests/test_run_demo.py::TestAssertion17ForceInjection`.
 
 The invitee experience (frictionless guest principal for the second user) is the hardest MeshyCal problem and is deferred to Phase 1.5 per Mesherra's open design questions.

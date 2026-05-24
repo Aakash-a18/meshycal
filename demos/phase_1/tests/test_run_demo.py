@@ -36,12 +36,17 @@ class TestRunDemoHappyPath:
         assert result.task_id != ""
         assert result.context_id != ""
 
-    async def test_produces_14_assertions(self, tmp_path: Path) -> None:
+    async def test_produces_all_assertion_numbers(self, tmp_path: Path) -> None:
         result = await run_demo(data_dir=tmp_path, reference_time=_REF)
         numbers = [a.number for a in result.assertions]
-        # SPEC §5 enumerates 1..14. Several numbers appear twice (per-ledger
-        # checks evaluated on each side); 14 distinct numbers must appear.
-        assert set(numbers) == set(range(1, 15))
+        # Phase 1 SPEC §5 enumerates 1..14; several numbers appear twice
+        # (per-ledger checks evaluated on each side). Phase 3 adds the
+        # scoped-disclosure assertions #15 and #16 (run once each, against
+        # the proposal leg). #17 (force-injection) lives in its own
+        # pytest class below rather than in the orchestrator's runtime
+        # check, per SPEC §8 — it requires a deliberately misbehaving
+        # gateway and so doesn't fit the happy-path orchestrator loop.
+        assert set(numbers) == set(range(1, 17))
 
     async def test_all_assertions_pass(self, tmp_path: Path) -> None:
         result = await run_demo(data_dir=tmp_path, reference_time=_REF)
@@ -53,15 +58,21 @@ class TestRunDemoHappyPath:
         """The cold-reload contract requires the SQLite files to still exist
         after the orchestrator returns — the test could re-open them itself.
 
-        Phase 2 sub-step 4: the orchestrator also writes a ``directory.sqlite``
-        for the live Directory service; we check the two agent ledgers
-        specifically rather than counting all SQLite files.
+        Phase 2: directory.sqlite is also written.
+        Phase 3: per-principal policy stores are also written. Check the
+        two agent ledgers specifically (by name) rather than counting all
+        SQLite files.
         """
         await run_demo(data_dir=tmp_path, reference_time=_REF)
         ledger_a = tmp_path / "user-a_phase1_local.sqlite"
         ledger_b = tmp_path / "user-b_phase1_local.sqlite"
         assert ledger_a.is_file(), f"A's ledger missing at {ledger_a}"
         assert ledger_b.is_file(), f"B's ledger missing at {ledger_b}"
+        # Phase 3: the policy stores should also persist.
+        policy_a = tmp_path / "user-a_phase1_local_policy.sqlite"
+        policy_b = tmp_path / "user-b_phase1_local_policy.sqlite"
+        assert policy_a.is_file(), f"A's policy store missing at {policy_a}"
+        assert policy_b.is_file(), f"B's policy store missing at {policy_b}"
 
     async def test_calendar_fixtures_written_to_data_dir(self, tmp_path: Path) -> None:
         await run_demo(data_dir=tmp_path, reference_time=_REF)
@@ -184,6 +195,107 @@ class TestAssertion13CatchesInventedSlot:
         )
         assert not result.passed
         assert "missing" in result.detail
+
+
+class TestAssertion17ForceInjection:
+    """SPEC §8 #17 — defense-in-depth must fire if the engine is buggy.
+
+    The orchestrator can't reasonably ship a buggy engine into the happy
+    path, so #17 lives as its own regression test: construct an A-side
+    Mesherra with a deliberately misbehaving PolicyEngine that returns
+    ALLOW_SCOPED while leaving the blocked field present, then prove the
+    OutboundGateway's re-check raises PolicyScopingFailed before signing.
+    """
+
+    async def test_buggy_engine_caught_before_send(self, tmp_path: Path) -> None:
+        from datetime import datetime, timezone
+        from typing import Any
+
+        import pytest
+        from mesherra.a2a_adapter import A2AAdapter
+        from mesherra.crypto.primitives import Signer
+        from mesherra.gateways.outbound import PolicyScopingFailed
+        from mesherra.identity import StaticDirectoryClient
+        from mesherra.models.primitives import Operation
+        from mesherra.policy import (
+            PolicyDecision,
+            PolicyEngine,
+            PolicyStore,
+            Verdict,
+            sign_policy_doc,
+        )
+        from mesherra.provenance.ledger import ProvenanceLedger
+        from mesherra.sdk import Mesherra
+
+        from policy_template import build_default_meshycal_policy
+
+        class BuggyEngine(PolicyEngine):
+            def evaluate(self, **kwargs: Any) -> PolicyDecision:
+                payload = kwargs["payload"]
+                # Tamper just enough to *not* be JCS-equal to input — but
+                # leave calendar_titles intact so the gateway's
+                # defense-in-depth re-check catches the omission.
+                tampered = dict(payload)
+                tampered["__buggy_marker__"] = 1
+                return PolicyDecision(
+                    verdict=Verdict.ALLOW_SCOPED,
+                    scoped_payload=tampered,
+                    matched_rule_count=1,
+                )
+
+        # Two agents, A wired with the buggy engine. B has no listener
+        # because we expect to never reach the wire.
+        a_signer = Signer.generate()
+        b_signer = Signer.generate()
+        a_principal = "user-a@phase3-injection.local"
+        b_principal = "user-b@phase3-injection.local"
+        directory = StaticDirectoryClient({
+            a_principal: a_signer.public_key_b64(),
+            b_principal: b_signer.public_key_b64(),
+        })
+        a_ledger = ProvenanceLedger(
+            db_path=tmp_path / "a_ledger.sqlite", ledger_owner=a_principal,
+        )
+        a_store = PolicyStore(
+            db_path=tmp_path / "a_policy.sqlite",
+            principal_id=a_principal,
+            public_key_b64=a_signer.public_key_b64(),
+        )
+        a_store.save_signed(
+            sign_policy_doc(
+                doc=build_default_meshycal_policy(principal_id=a_principal),
+                signer=a_signer,
+            )
+        )
+        a_sdk = Mesherra(
+            principal_id=a_principal,
+            signer=a_signer,
+            ledger=a_ledger,
+            adapter=A2AAdapter(),
+            directory=directory,
+            policy_store=a_store,
+            policy_engine=BuggyEngine(),
+        )
+
+        try:
+            with pytest.raises(PolicyScopingFailed):
+                await a_sdk.send_to(
+                    peer_url="http://127.0.0.1:1/",  # never reached
+                    peer_principal_id=b_principal,
+                    payload={
+                        "candidates": ["2026-05-26T14:00:00Z"],
+                        "duration_minutes": 30,
+                        # The blocked field the buggy engine "forgot" to strip.
+                        "calendar_titles": ["should-never-leak"],
+                    },
+                    payload_schema="meshycal.scheduling/proposal-v1",
+                    operation=Operation.PROPOSAL,
+                )
+            # No residue should have been written.
+            assert a_ledger.get_all() == []
+        finally:
+            a_store.close()
+            a_ledger.close()
 
 
 def _make_fake_residue(*, payload_hash: str, sequence: int, operation_value: str):
