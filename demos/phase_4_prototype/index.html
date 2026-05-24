@@ -1,0 +1,1948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MeshyCal — the digital tessera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" />
+<style>
+
+/* =========================================================================
+ *  Tokens — editorial archival meets digital tessera
+ * ========================================================================= */
+:root {
+  --paper:        hsl(40 32% 93%);
+  --paper-deep:   hsl(38 26% 87%);
+  --paper-dim:    hsl(34 18% 78%);
+  --ink:          hsl(222 28% 11%);
+  --ink-soft:     hsl(222 18% 28%);
+  --ink-mute:     hsl(222 10% 46%);
+  --rule:         hsl(34 14% 70%);
+
+  --terracotta:   hsl(13 60% 50%);
+  --terracotta-deep: hsl(10 55% 36%);
+  --jade:         hsl(155 30% 33%);
+  --jade-deep:    hsl(155 35% 24%);
+  --gold:         hsl(40 70% 53%);
+  --gold-deep:    hsl(35 65% 38%);
+
+  --display: "Fraunces", "EB Garamond", serif;
+  --body:    "Newsreader", "EB Garamond", Georgia, serif;
+  --mono:    "IBM Plex Mono", "Courier New", monospace;
+
+  --rad: 2px;
+  --rad-lg: 4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.55;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "kern";
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, hsl(34 25% 60% / 0.045) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, hsl(15 30% 50% / 0.04) 0%, transparent 50%),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 3px,
+      hsl(34 20% 40% / 0.012) 3px 4px
+    );
+  mix-blend-mode: multiply;
+}
+
+main { position: relative; z-index: 1; }
+
+.display {
+  font-family: var(--display);
+  font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
+  letter-spacing: -0.025em;
+  line-height: 0.92;
+  font-weight: 400;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 500;
+}
+
+.serif-italic {
+  font-family: var(--display);
+  font-style: italic;
+  font-variation-settings: "opsz" 24;
+  font-weight: 400;
+}
+
+.mono { font-family: var(--mono); font-size: 13px; }
+
+a { color: var(--terracotta-deep); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+.shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 56px;
+}
+
+section { padding: 96px 0; }
+section + section { border-top: 1px solid var(--rule); }
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.section-label::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--ink);
+}
+
+/* HERO ------------------------------------------------------------------ */
+.hero {
+  min-height: 96vh;
+  padding: 56px 0 96px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  position: relative;
+}
+
+.hero-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ink);
+}
+.hero-bar .brand {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.hero-bar nav {
+  display: flex;
+  gap: 32px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.hero-bar nav a { color: inherit; }
+
+.hero-stage {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 64px;
+  align-items: center;
+  margin-top: 64px;
+}
+
+.hero-mast h1 {
+  font-family: var(--display);
+  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  font-size: clamp(82px, 12vw, 168px);
+  line-height: 0.86;
+  letter-spacing: -0.035em;
+  margin: 0 0 32px;
+  font-weight: 350;
+}
+.hero-mast h1 .wonky {
+  font-style: italic;
+  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  color: var(--terracotta-deep);
+}
+
+.hero-tagline {
+  font-family: var(--display);
+  font-style: italic;
+  font-variation-settings: "opsz" 36;
+  font-size: 26px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  max-width: 420px;
+  margin: 0 0 36px;
+  letter-spacing: -0.005em;
+}
+
+.hero-prose {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 460px;
+  margin: 0 0 40px;
+}
+
+.hero-cta-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+button, .btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 16px 26px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 220ms ease, color 220ms ease, transform 220ms ease;
+}
+button:hover, .btn:hover {
+  background: var(--terracotta-deep);
+  border-color: var(--terracotta-deep);
+  transform: translateY(-1px);
+}
+button.ghost, .btn.ghost {
+  background: transparent;
+  color: var(--ink);
+}
+button.ghost:hover { color: var(--paper); }
+
+button[disabled], .btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.tessera {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 460px;
+  margin-left: auto;
+}
+.tessera svg { width: 100%; height: 100%; display: block; }
+
+.hero-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+/* PRIMITIVES ------------------------------------------------------------ */
+.primitives {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  margin-top: 48px;
+}
+.primitive {
+  border-top: 1px solid var(--ink);
+  padding-top: 32px;
+}
+.primitive .roman {
+  font-family: var(--display);
+  font-variation-settings: "opsz" 144;
+  font-size: 64px;
+  line-height: 1;
+  color: var(--ink-soft);
+  margin-bottom: 32px;
+  font-weight: 350;
+}
+.primitive h3 {
+  font-family: var(--display);
+  font-style: italic;
+  font-variation-settings: "opsz" 36;
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 0 0 18px;
+  font-weight: 400;
+}
+.primitive p {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+}
+.primitive .badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: var(--jade-deep);
+  color: var(--paper);
+  padding: 4px 10px;
+  margin-top: 8px;
+}
+
+/* DEMO ------------------------------------------------------------------ */
+.demo-section {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 96px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+.demo-section .section-label::before { background: var(--paper); }
+.demo-section .eyebrow { color: hsl(40 30% 75%); }
+.demo-section h2 {
+  font-family: var(--display);
+  font-variation-settings: "opsz" 144, "SOFT" 80;
+  font-size: 56px;
+  line-height: 1.0;
+  margin: 0 0 18px;
+  font-weight: 350;
+  letter-spacing: -0.02em;
+}
+.demo-section h2 em {
+  font-style: italic;
+  color: var(--gold);
+  font-variation-settings: "opsz" 144, "SOFT" 80, "WONK" 1;
+}
+.demo-section .lede {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.35;
+  color: hsl(40 25% 80%);
+  max-width: 620px;
+  margin: 0 0 56px;
+}
+
+.scenarios-tabs {
+  display: flex;
+  gap: 1px;
+  background: hsl(220 18% 22%);
+  margin-bottom: 32px;
+  border: 1px solid hsl(220 18% 22%);
+}
+.scenarios-tabs button {
+  flex: 1;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  text-align: left;
+  padding: 20px 24px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scenarios-tabs button .n {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  font-weight: 400;
+  color: var(--gold);
+}
+.scenarios-tabs button[aria-selected="true"] {
+  background: hsl(220 18% 18%);
+}
+.scenarios-tabs button[aria-selected="true"] .n { color: var(--gold); }
+.scenarios-tabs button .status {
+  font-size: 9px;
+  color: hsl(40 25% 65%);
+}
+.scenarios-tabs button[data-state="upcoming"] .status { color: var(--terracotta); }
+
+.stage {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 1fr;
+  gap: 0;
+  background: hsl(220 22% 8%);
+  border: 1px solid hsl(220 18% 22%);
+  min-height: 580px;
+  position: relative;
+}
+
+.party {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+.party.left  { border-right: 1px solid hsl(220 18% 22%); }
+.party.right { border-left:  1px solid hsl(220 18% 22%); }
+
+.party .who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.party .avatar {
+  width: 44px;
+  height: 44px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  flex: 0 0 44px;
+}
+.party.right .avatar { background: var(--terracotta); color: var(--paper); }
+.party .who .name {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+.party .who .id {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: hsl(40 25% 60%);
+  letter-spacing: 0.05em;
+}
+
+.party .panel-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(40 20% 55%);
+  border-top: 1px solid hsl(220 18% 22%);
+  padding-top: 14px;
+  margin-top: 6px;
+}
+
+.calendar {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: hsl(220 22% 6%);
+  border: 1px solid hsl(220 18% 18%);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.calendar .event {
+  padding: 10px 14px;
+  border-bottom: 1px solid hsl(220 18% 16%);
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  transition: background 250ms ease;
+}
+.calendar .event:last-child { border-bottom: none; }
+.calendar .event .time {
+  color: hsl(40 25% 70%);
+  letter-spacing: 0.04em;
+}
+.calendar .event .title {
+  color: var(--paper);
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 14px;
+}
+.calendar .event .attendees {
+  grid-column: 2;
+  color: hsl(40 20% 55%);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.calendar .event.free {
+  background: hsl(155 30% 14%);
+}
+.calendar .event.free .title { color: hsl(155 35% 75%); }
+.calendar .event.free .time { color: hsl(155 30% 65%); }
+
+/* Booked state — the free slot has just been written into via a signed
+   exchange. The slot transitions: gold seam grows along its left edge,
+   then the cell shifts from "free green" to "booked gold-on-ink" and
+   the labels swap to show the new Meeting Object. */
+.calendar .event.booking {
+  background: linear-gradient(
+    90deg,
+    hsl(40 70% 53%) 0 3px,
+    hsl(155 30% 14%) 3px 100%
+  );
+  animation: bookingFlash 600ms ease-out;
+}
+.calendar .event.booked {
+  background: hsl(220 22% 12%);
+  border-left: 3px solid var(--gold);
+  position: relative;
+}
+.calendar .event.booked .time { color: var(--gold); }
+.calendar .event.booked .title {
+  color: var(--paper);
+  font-style: normal;
+  font-weight: 500;
+}
+.calendar .event.booked .attendees {
+  color: hsl(40 50% 65%);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.calendar .event.booked::after {
+  content: "✓ SIGNED";
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+}
+@keyframes bookingFlash {
+  0%   { background-color: hsl(155 30% 14%); }
+  40%  { background-color: hsl(40 70% 35%); }
+  100% { background-color: hsl(220 22% 12%); }
+}
+
+.wire {
+  background: hsl(220 22% 7%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.wire::before, .wire::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(220 18% 22%), transparent);
+}
+.wire::before { top: 36%; }
+.wire::after  { bottom: 36%; }
+
+.airlock {
+  margin: auto;
+  width: 88%;
+  position: relative;
+  text-align: center;
+  padding: 32px 0;
+}
+.airlock-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+  margin-bottom: 18px;
+}
+.airlock-chamber {
+  border: 1px dashed hsl(40 25% 50% / 0.35);
+  padding: 24px 18px;
+  background: hsl(220 22% 9%);
+  position: relative;
+  min-height: 200px;
+}
+.airlock-chamber::before {
+  content: "AIRLOCK";
+  position: absolute;
+  top: -8px; left: 50%;
+  transform: translateX(-50%);
+  background: hsl(220 22% 7%);
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: hsl(40 25% 55%);
+}
+
+.field-tile {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  border: 1px solid hsl(220 18% 24%);
+  background: hsl(220 22% 11%);
+  margin: 6px 0;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: all 600ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.field-tile .k { color: hsl(40 25% 75%); }
+.field-tile .v { color: hsl(40 30% 55%); font-size: 10px; max-width: 50%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-tile.allowed { border-left: 3px solid var(--jade); }
+.field-tile.blocked {
+  border-left: 3px solid var(--terracotta);
+  color: hsl(13 50% 55%);
+}
+.field-tile.evaporating {
+  opacity: 0.3;
+  transform: translateY(-8px) scaleX(0.95);
+  filter: blur(1px);
+}
+.field-tile.evaporating .v { text-decoration: line-through; }
+.field-tile.evaporated {
+  opacity: 0;
+  transform: translateY(-20px) scaleX(0.7);
+  margin: 0;
+  padding: 0;
+  height: 0;
+  border: none;
+  pointer-events: none;
+}
+
+.tessera-fit-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, hsl(220 22% 6% / 0.92) 0%, hsl(220 22% 6% / 0.7) 100%);
+  z-index: 10;
+  pointer-events: none;
+}
+.tessera-fit-overlay.active { display: flex; animation: fadeIn 400ms ease forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.tessera-fit-overlay .glyph {
+  position: relative;
+  width: 280px;
+  height: 280px;
+}
+.tessera-fit-overlay .verdict {
+  position: absolute;
+  bottom: 18%;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0;
+  animation: fadeInLate 800ms ease 700ms forwards;
+}
+@keyframes fadeInLate { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.tessera-half-l, .tessera-half-r {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+.tessera-half-l { left: 0;  animation: slideInL 900ms cubic-bezier(0.34, 1.4, 0.6, 1) forwards; }
+.tessera-half-r { right: 0; animation: slideInR 900ms cubic-bezier(0.34, 1.4, 0.6, 1) forwards; }
+@keyframes slideInL { from { transform: translateX(-60%) rotate(-3deg); opacity: 0; } to { transform: translateX(0) rotate(0); opacity: 1; } }
+@keyframes slideInR { from { transform: translateX(60%) rotate(3deg); opacity: 0; }  to { transform: translateX(0) rotate(0); opacity: 1; } }
+
+.tessera-seam {
+  position: absolute;
+  left: 50%;
+  top: 12%; bottom: 12%;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--gold), var(--gold), transparent);
+  transform: translateX(-50%) scaleY(0);
+  transform-origin: center;
+  animation: seamGrow 700ms ease 800ms forwards;
+  box-shadow: 0 0 24px hsl(40 70% 55% / 0.6);
+}
+@keyframes seamGrow { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
+
+.step-indicator {
+  display: flex;
+  gap: 0;
+  margin-top: 28px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+}
+.step-indicator .step {
+  flex: 1;
+  padding: 14px 18px;
+  border: 1px solid hsl(220 18% 22%);
+  border-right: none;
+  background: hsl(220 22% 8%);
+  transition: all 300ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.step-indicator .step:last-child { border-right: 1px solid hsl(220 18% 22%); }
+.step-indicator .step .n {
+  font-family: var(--display);
+  font-size: 18px;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: hsl(40 20% 45%);
+}
+.step-indicator .step.active {
+  background: hsl(220 22% 13%);
+  color: var(--gold);
+}
+.step-indicator .step.active .n { color: var(--gold); }
+.step-indicator .step.done .n { color: var(--jade); }
+.step-indicator .step.done { color: hsl(155 25% 65%); }
+
+.run-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  align-items: center;
+}
+.run-controls .status {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: hsl(40 25% 65%);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.demo-section button {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+.demo-section button:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.demo-section button.ghost {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid hsl(220 18% 30%);
+}
+.demo-section button.ghost:hover {
+  background: hsl(220 18% 14%);
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+/* Payload list on the right party — populated via DOM, not innerHTML */
+.payload-list {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: hsl(40 25% 70%);
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.payload-list.empty { font-style: italic; color: hsl(40 20% 50%); }
+.payload-list .ok-line {
+  margin-top: 8px;
+  color: var(--terracotta);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* LEDGER --------------------------------------------------------------- */
+.ledger-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 48px;
+}
+.ledger {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 36px 32px 28px;
+  border: 1px solid var(--ink-soft);
+  position: relative;
+  font-family: var(--mono);
+  font-size: 12px;
+  box-shadow:
+    0 1px 0 hsl(34 20% 50% / 0.2),
+    inset 0 0 0 1px hsl(40 30% 88%);
+}
+.ledger::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 30px,
+    hsl(34 25% 72% / 0.18) 30px 31px
+  );
+  pointer-events: none;
+}
+.ledger > * { position: relative; z-index: 1; }
+
+.ledger-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.ledger-head .who {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 500;
+  font-style: italic;
+}
+.ledger-head .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.ledger-entry {
+  padding: 16px 0;
+  border-bottom: 1px solid hsl(34 18% 76%);
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 12px;
+}
+.ledger-entry:last-child { border-bottom: none; }
+.ledger-entry .seq {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-soft);
+  padding-top: 4px;
+}
+.ledger-entry .body { font-size: 11.5px; line-height: 1.65; }
+.ledger-entry .body .row { display: block; }
+.ledger-entry .body .k { color: var(--ink-mute); display: inline-block; width: 110px; }
+.ledger-entry .body .v { color: var(--ink); }
+.ledger-entry .body .v.emit { color: var(--terracotta-deep); font-weight: 500; }
+.ledger-entry .body .v.receive { color: var(--jade-deep); font-weight: 500; }
+.ledger-entry .body .hash { color: var(--ink-mute); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; }
+
+.ledger-empty {
+  font-family: var(--display);
+  font-style: italic;
+  color: var(--ink-mute);
+  padding: 32px 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+/* POLICY --------------------------------------------------------------- */
+.policy-block {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 64px;
+  margin-top: 48px;
+  align-items: start;
+}
+.policy-narrative h3 {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 36px;
+  line-height: 1.05;
+  margin: 0 0 20px;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+}
+.policy-narrative p {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 16px;
+}
+.policy-narrative .small {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-top: 24px;
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+}
+
+.policy-doc {
+  background: var(--paper-deep);
+  border: 1px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 28px 32px;
+  line-height: 1.75;
+  position: relative;
+  white-space: pre-wrap;
+}
+.policy-doc::before {
+  content: "mesherra.policy/doc-v1 · principal: iris@meshycal.demo";
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+.policy-doc .k { color: var(--ink-soft); }
+.policy-doc .s { color: var(--ink); }
+.policy-doc .b { color: var(--terracotta-deep); }
+.policy-doc .a { color: var(--jade-deep); }
+.policy-doc .c { color: var(--ink-mute); font-style: italic; }
+
+/* ROADMAP -------------------------------------------------------------- */
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-top: 48px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+.road {
+  padding: 32px 28px;
+  border-right: 1px solid var(--rule);
+}
+.road:last-child { border-right: none; }
+.road .n {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+  font-weight: 350;
+  color: var(--ink-soft);
+}
+.road h4 {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 14px;
+  line-height: 1.15;
+}
+.road p {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 18px;
+}
+.road .state {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  display: inline-block;
+}
+.road .state.live    { background: var(--jade-deep); color: var(--paper); }
+.road .state.queued  { background: var(--terracotta-deep); color: var(--paper); }
+.road .state.distant { background: var(--ink-soft); color: var(--paper); }
+
+/* COLOPHON ------------------------------------------------------------- */
+.colophon {
+  background: var(--paper-deep);
+  padding: 64px 0;
+  border-top: 1px solid var(--ink);
+}
+.colophon .cols {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 48px;
+}
+.colophon h5 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+.colophon p {
+  font-size: 15px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+.colophon .signature {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 26px;
+  margin-top: 18px;
+  color: var(--ink);
+  font-weight: 400;
+}
+.colophon .small {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  margin-top: 32px;
+  text-align: center;
+  border-top: 1px solid var(--rule);
+  padding-top: 24px;
+}
+
+@media (max-width: 1080px) {
+  .hero-stage { grid-template-columns: 1fr; }
+  .tessera { margin: 0 auto; max-width: 320px; }
+  .stage { grid-template-columns: 1fr; }
+  .party.left, .party.right { border: none; border-bottom: 1px solid hsl(220 18% 22%); }
+  .ledger-block { grid-template-columns: 1fr; }
+  .policy-block { grid-template-columns: 1fr; gap: 32px; }
+  .primitives, .roadmap { grid-template-columns: 1fr; }
+  .road { border-right: none; border-bottom: 1px solid var(--rule); }
+}
+@media (max-width: 720px) {
+  .shell { padding: 0 24px; }
+  section { padding: 64px 0; }
+  .scenarios-tabs { flex-direction: column; }
+}
+
+</style>
+</head>
+<body>
+<main>
+
+<!-- HERO ----------------------------------------------------------------- -->
+<section class="hero">
+  <div class="shell">
+
+    <header class="hero-bar">
+      <div class="brand">⌘ MESHYCAL  ·  PROTOTYPE 0.4</div>
+      <nav>
+        <a href="#primitives">Primitives</a>
+        <a href="#demo">Live demo</a>
+        <a href="#policy">Policy</a>
+        <a href="#roadmap">Roadmap</a>
+      </nav>
+    </header>
+
+    <div class="hero-stage">
+      <div class="hero-mast">
+        <h1>the<br/>digital<br/><span class="wonky">tessera</span></h1>
+        <p class="hero-tagline">
+          Two halves that fit, centuries apart — without anyone trusting anyone in advance.
+        </p>
+        <p class="hero-prose">
+          MeshyCal is the first <em>Delegation</em> built on Mesherra. Two agents
+          schedule a meeting. Neither leaks what doesn't have to cross. Each side
+          walks away with a tamper-evident signed receipt of exactly what was agreed.
+        </p>
+        <div class="hero-cta-row">
+          <a href="#demo" class="btn">See it run</a>
+          <a href="#primitives" class="btn ghost">What is this</a>
+        </div>
+      </div>
+
+      <div class="tessera" aria-hidden="true">
+        <svg viewBox="0 0 400 400">
+          <defs>
+            <radialGradient id="stoneL" cx="40%" cy="35%" r="80%">
+              <stop offset="0%" stop-color="#e0d4bf"/>
+              <stop offset="60%" stop-color="#c8b89d"/>
+              <stop offset="100%" stop-color="#9b8867"/>
+            </radialGradient>
+            <radialGradient id="stoneR" cx="60%" cy="60%" r="80%">
+              <stop offset="0%" stop-color="#d4a991"/>
+              <stop offset="60%" stop-color="#b88467"/>
+              <stop offset="100%" stop-color="#7d553e"/>
+            </radialGradient>
+            <linearGradient id="seam" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"  stop-color="hsl(40 70% 53% / 0)"/>
+              <stop offset="40%" stop-color="hsl(40 70% 53% / 1)"/>
+              <stop offset="60%" stop-color="hsl(40 70% 53% / 1)"/>
+              <stop offset="100%" stop-color="hsl(40 70% 53% / 0)"/>
+            </linearGradient>
+            <filter id="grain">
+              <feTurbulence baseFrequency="0.85" numOctaves="2"/>
+              <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0"/>
+              <feComposite in2="SourceGraphic" operator="in"/>
+            </filter>
+          </defs>
+
+          <path d="M 200 24 C 184 30, 174 56, 168 84 L 170 138 L 160 168 L 174 198 L 156 230 L 168 262 L 162 296 L 178 326 L 174 360 L 196 376 L 196 376 L 196 24 Z" fill="url(#stoneL)" filter="url(#grain)"/>
+          <path d="M 196 24 L 196 376 L 196 376 C 170 372, 130 364, 96 340 C 60 312, 36 264, 32 200 C 36 134, 64 84, 104 52 C 138 30, 172 24, 196 24 Z" fill="url(#stoneL)" filter="url(#grain)" opacity="0.92"/>
+
+          <path d="M 204 24 C 220 30, 230 56, 236 84 L 234 138 L 244 168 L 230 198 L 248 230 L 236 262 L 242 296 L 226 326 L 230 360 L 208 376 L 208 376 L 208 24 Z" fill="url(#stoneR)" filter="url(#grain)"/>
+          <path d="M 204 24 L 204 376 L 204 376 C 230 372, 270 364, 304 340 C 340 312, 364 264, 368 200 C 364 134, 336 84, 296 52 C 262 30, 228 24, 204 24 Z" fill="url(#stoneR)" filter="url(#grain)" opacity="0.92"/>
+
+          <rect x="198" y="24" width="4" height="352" fill="url(#seam)" />
+
+          <g stroke="#3a2a18" stroke-width="1.4" opacity="0.55" fill="none">
+            <path d="M 86 108 l 14 0"/>
+            <path d="M 80 132 l 18 0"/>
+            <path d="M 88 156 l 12 0"/>
+            <path d="M 300 252 l 14 0"/>
+            <path d="M 296 276 l 18 0"/>
+            <path d="M 304 300 l 12 0"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <footer class="hero-footer">
+      <div>vol. iv · scoped disclosure shipped</div>
+      <div>est. 2026  ·  mmxxvi</div>
+      <div>two phones · one verified meeting</div>
+    </footer>
+  </div>
+</section>
+
+<!-- PRIMITIVES ----------------------------------------------------------- -->
+<section id="primitives">
+  <div class="shell">
+    <div class="section-label"><span class="eyebrow">i · the trust layer</span></div>
+    <h2 class="display" style="font-size:56px;line-height:1;margin:0 0 16px;font-weight:350;">
+      Three primitives.<br/>
+      <span class="serif-italic" style="color:var(--terracotta-deep);">One signed receipt.</span>
+    </h2>
+    <p style="font-size:19px;max-width:680px;color:var(--ink-soft);margin:0 0 16px;">
+      Mesherra is the trust layer underneath. MeshyCal is the first thing built on top.
+      Together they make agent-to-agent interaction <em>tessera-grade</em>: the two
+      halves either fit, or they don't.
+    </p>
+
+    <div class="primitives">
+      <div class="primitive">
+        <div class="roman">I</div>
+        <h3>Provenance</h3>
+        <p>Every interaction produces two signed entries — one per ledger. A hash chain links them. You can re-open the books years later and prove what happened.</p>
+        <span class="badge">phase 1 · shipped</span>
+      </div>
+      <div class="primitive">
+        <div class="roman">II</div>
+        <h3>Identity</h3>
+        <p>Each principal publishes a public key through a signed directory. No TOFU. No reused names. Strangers can verify each other before exchanging anything.</p>
+        <span class="badge">phase 2 · shipped</span>
+      </div>
+      <div class="primitive">
+        <div class="roman">III</div>
+        <h3>Scoped disclosure</h3>
+        <p>Your user-signed policy stands between your agent and the wire. Calendar titles, attendee emails — anything you blocked never crosses. The receipt proves it.</p>
+        <span class="badge">phase 3 · shipped</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO ---------------------------------------------------------------- -->
+<section id="demo" class="demo-section">
+  <div class="shell">
+    <div class="section-label"><span class="eyebrow">ii · live demonstration</span></div>
+    <h2>Watch the airlock work.<br/><em>Two halves, one click.</em></h2>
+    <p class="lede">
+      A's agent has the full calendar — titles, attendees, the lot.
+      Press <em>Request meeting</em>. A's user-signed policy strips the
+      forbidden fields before any byte crosses. B sees only what was allowed.
+      Both sides sign. The halves fit.
+    </p>
+
+    <div class="scenarios-tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-scenario="1" data-state="live">
+        <span class="n">i.</span> Two-party request
+        <span class="status">live · runs in browser</span>
+      </button>
+      <button role="tab" aria-selected="false" data-scenario="2" data-state="upcoming">
+        <span class="n">ii.</span> Four-party group find
+        <span class="status">upcoming · backend work needed</span>
+      </button>
+      <button role="tab" aria-selected="false" data-scenario="3" data-state="upcoming">
+        <span class="n">iii.</span> Cascading reschedule
+        <span class="status">upcoming · agent reasoning needed</span>
+      </button>
+    </div>
+
+    <div class="stage" id="stage">
+
+      <div class="tessera-fit-overlay" id="tesseraFit">
+        <div class="glyph">
+          <svg class="tessera-half-l" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <radialGradient id="halfL" cx="60%" cy="35%" r="90%">
+                <stop offset="0%" stop-color="#e0d4bf"/>
+                <stop offset="100%" stop-color="#8a7456"/>
+              </radialGradient>
+            </defs>
+            <path d="M 200 0 L 200 280 L 100 280 C 60 268, 30 230, 16 168 C 20 110, 50 56, 96 24 C 130 4, 170 0, 200 0 Z" fill="url(#halfL)"/>
+          </svg>
+          <svg class="tessera-half-r" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <radialGradient id="halfR" cx="40%" cy="60%" r="90%">
+                <stop offset="0%" stop-color="#d4a991"/>
+                <stop offset="100%" stop-color="#6e4733"/>
+              </radialGradient>
+            </defs>
+            <path d="M 0 0 L 0 280 L 100 280 C 140 268, 170 230, 184 168 C 180 110, 150 56, 104 24 C 70 4, 30 0, 0 0 Z" fill="url(#halfR)"/>
+          </svg>
+          <div class="tessera-seam"></div>
+        </div>
+        <div class="verdict">tessera fit  ·  trust verified</div>
+      </div>
+
+      <!-- Party A -->
+      <div class="party left">
+        <div class="who">
+          <div class="avatar">I</div>
+          <div>
+            <div class="name">Iris</div>
+            <div class="id">iris@meshycal.demo</div>
+          </div>
+        </div>
+
+        <div class="panel-label">internal calendar — what A's agent can see</div>
+        <div class="calendar">
+          <div class="event"><span class="time">tue 9:00</span>
+            <div><div class="title">Atelier critique</div><div class="attendees">marius · wren · 2 others</div></div>
+          </div>
+          <div class="event"><span class="time">tue 11:00</span>
+            <div><div class="title">Field notes review</div><div class="attendees">atlas</div></div>
+          </div>
+          <div class="event free" data-slot="iris-tue-1300"><span class="time">tue 13:00</span>
+            <div><div class="title">— free —</div><div class="attendees">candidate · 30 min</div></div>
+          </div>
+          <div class="event free"><span class="time">tue 15:30</span>
+            <div><div class="title">— free —</div><div class="attendees">candidate · 30 min</div></div>
+          </div>
+          <div class="event"><span class="time">wed 10:00</span>
+            <div><div class="title">Glassworks site visit</div><div class="attendees">marius</div></div>
+          </div>
+        </div>
+
+        <div class="panel-label">internal payload — what A is about to send</div>
+        <div style="font-family:var(--mono);font-size:11px;color:hsl(40 25% 70%);padding:8px 0;">
+          <div>candidates  →  3 slots</div>
+          <div>duration_minutes  →  30</div>
+          <div style="color:var(--terracotta);">calendar_titles  →  ["Atelier critique" ...]</div>
+          <div style="color:var(--terracotta);">attendee_emails  →  ["wren@..."]</div>
+          <div>constraint_hints  →  {tz: "Europe/Lisbon"}</div>
+        </div>
+      </div>
+
+      <!-- Wire -->
+      <div class="wire">
+        <div class="airlock">
+          <div class="airlock-label">A's airlock — outbound</div>
+          <div class="airlock-chamber" id="airlockChamber">
+            <div class="field-tile allowed" data-field="candidates">
+              <span class="k">candidates</span>
+              <span class="v">3 slots</span>
+            </div>
+            <div class="field-tile allowed" data-field="duration_minutes">
+              <span class="k">duration_minutes</span>
+              <span class="v">30</span>
+            </div>
+            <div class="field-tile blocked" data-field="calendar_titles">
+              <span class="k">calendar_titles</span>
+              <span class="v">["Atelier critique" ...]</span>
+            </div>
+            <div class="field-tile blocked" data-field="attendee_emails">
+              <span class="k">attendee_emails</span>
+              <span class="v">["wren@..."]</span>
+            </div>
+            <div class="field-tile allowed" data-field="constraint_hints">
+              <span class="k">constraint_hints</span>
+              <span class="v">{tz: "Europe/Lisbon"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Party B -->
+      <div class="party right">
+        <div class="who">
+          <div class="avatar">M</div>
+          <div>
+            <div class="name">Marius</div>
+            <div class="id">marius@meshycal.demo</div>
+          </div>
+        </div>
+
+        <div class="panel-label">marius' calendar — what B's agent will check against</div>
+        <div class="calendar">
+          <div class="event"><span class="time">tue 9:00</span>
+            <div><div class="title">Studio hours</div><div class="attendees">solo</div></div>
+          </div>
+          <div class="event free" data-slot="marius-tue-1300"><span class="time">tue 13:00</span>
+            <div><div class="title">— free —</div><div class="attendees">match · 30 min</div></div>
+          </div>
+          <div class="event"><span class="time">tue 14:00</span>
+            <div><div class="title">Print proof review</div><div class="attendees">atlas</div></div>
+          </div>
+          <div class="event"><span class="time">wed 09:00</span>
+            <div><div class="title">Type sketch session</div><div class="attendees">solo</div></div>
+          </div>
+          <div class="event free"><span class="time">wed 11:30</span>
+            <div><div class="title">— free —</div><div class="attendees">match · 30 min</div></div>
+          </div>
+        </div>
+
+        <div class="panel-label">what B actually receives</div>
+        <div class="payload-list empty" id="payloadB">— nothing yet —</div>
+      </div>
+
+    </div>
+
+    <div class="step-indicator" id="stepIndicator">
+      <div class="step" data-step="1"><span class="n">i.</span> Build payload</div>
+      <div class="step" data-step="2"><span class="n">ii.</span> Airlock evaporates blocked fields</div>
+      <div class="step" data-step="3"><span class="n">iii.</span> A→B scoped only</div>
+      <div class="step" data-step="4"><span class="n">iv.</span> B accepts a slot</div>
+      <div class="step" data-step="5"><span class="n">v.</span> B→A acceptance</div>
+      <div class="step" data-step="6"><span class="n">vi.</span> Tessera fit · receipts written</div>
+      <div class="step" data-step="7"><span class="n">vii.</span> Meeting Object written to both calendars</div>
+    </div>
+
+    <div class="run-controls">
+      <button id="runBtn">Request meeting</button>
+      <button id="resetBtn" class="ghost">Reset</button>
+      <div class="status" id="runStatus">ready — press to begin</div>
+      <div id="backendStatus" style="font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;padding:6px 10px;border:1px solid hsl(220 18% 30%);color:hsl(40 25% 65%);">checking backend…</div>
+    </div>
+
+    <div class="ledger-block">
+      <div class="ledger" id="ledgerA">
+        <div class="ledger-head">
+          <div class="who">Iris' book</div>
+          <div class="label">ledger_owner: iris@meshycal.demo</div>
+        </div>
+        <div class="ledger-body" id="ledgerBodyA">
+          <!-- populated via DOM -->
+        </div>
+      </div>
+
+      <div class="ledger" id="ledgerB">
+        <div class="ledger-head">
+          <div class="who">Marius' book</div>
+          <div class="label">ledger_owner: marius@meshycal.demo</div>
+        </div>
+        <div class="ledger-body" id="ledgerBodyB">
+          <!-- populated via DOM -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- POLICY -------------------------------------------------------------- -->
+<section id="policy">
+  <div class="shell">
+    <div class="section-label"><span class="eyebrow">iii · the user's constitution</span></div>
+    <h2 class="display" style="font-size:56px;line-height:1;margin:0 0 16px;font-weight:350;">
+      A user-signed rulebook.<br/>
+      <span class="serif-italic" style="color:var(--terracotta-deep);">No one else can write it.</span>
+    </h2>
+    <p style="font-size:19px;max-width:680px;color:var(--ink-soft);margin:0 0 8px;">
+      Every principal carries a tiny signed document — their constitution.
+      It names exactly which payload fields may leave, and which may not.
+      The airlock obeys it because the user signed it.
+    </p>
+
+    <div class="policy-block">
+      <div class="policy-narrative">
+        <h3>The default MeshyCal template</h3>
+        <p>
+          When you install MeshyCal, this rulebook is offered and signed
+          with your key. You can edit it — the editor is coming in
+          Phase 4 — but the defaults express a sensible posture for
+          scheduling agents.
+        </p>
+        <p>
+          The block list closes the leakage attacks people instinctively
+          fear: calendar titles, attendee emails. The allow list says
+          what crosses: candidate slots, duration, soft timezone hints.
+        </p>
+        <p class="small">
+          field: mesherra.policy/doc-v1<br/>
+          stored: per-principal SQLite, Ed25519-signed<br/>
+          verified: on every read by the bound public key
+        </p>
+      </div>
+
+      <pre class="policy-doc"><span class="k">principal_id</span>: <span class="s">"iris@meshycal.demo"</span>
+<span class="k">version</span>: <span class="s">1</span>
+<span class="k">issued_at</span>: <span class="s">"2026-05-24T12:00:00Z"</span>
+<span class="k">rules</span>:
+  <span class="c"># meshycal proposals — what leaves</span>
+  - <span class="k">match</span>:
+      <span class="k">schema</span>: <span class="s">"meshycal.scheduling/proposal-v1"</span>
+      <span class="k">direction</span>: <span class="s">outbound</span>
+    <span class="k">outbound_allow</span>:
+      - <span class="a">candidates</span>
+      - <span class="a">duration_minutes</span>
+      - <span class="a">constraint_hints</span>
+    <span class="k">outbound_block</span>:
+      - <span class="b">calendar_titles</span>
+      - <span class="b">attendee_emails</span>
+    <span class="k">max_array_size</span>:
+      <span class="a">candidates</span>: 5
+
+  <span class="c"># meshycal proposals — what is allowed in</span>
+  - <span class="k">match</span>:
+      <span class="k">schema</span>: <span class="s">"meshycal.scheduling/proposal-v1"</span>
+      <span class="k">direction</span>: <span class="s">inbound</span>
+    <span class="k">inbound_allow</span>:
+      - <span class="a">candidates</span>
+      - <span class="a">duration_minutes</span>
+      - <span class="a">constraint_hints</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP ------------------------------------------------------------- -->
+<section id="roadmap">
+  <div class="shell">
+    <div class="section-label"><span class="eyebrow">iv · what's next</span></div>
+    <h2 class="display" style="font-size:56px;line-height:1;margin:0 0 16px;font-weight:350;">
+      Three scenarios.<br/>
+      <span class="serif-italic" style="color:var(--terracotta-deep);">Increasing agentic complexity.</span>
+    </h2>
+    <p style="font-size:18px;max-width:680px;color:var(--ink-soft);margin:0 0 8px;">
+      Scenario one runs in the browser above. Two and three need new
+      backend capability — multi-party orchestration first, then
+      agent-to-agent reasoning.
+    </p>
+
+    <div class="roadmap">
+      <div class="road">
+        <div class="n">i.</div>
+        <h4>Two-party direct request</h4>
+        <p>
+          A asks B for an appointment. The airlock strips the rich
+          payload. Both sides sign matching receipts. Tessera fit.
+        </p>
+        <p style="font-family:var(--mono);font-size:11.5px;color:var(--ink-mute);">
+          backend: <em>complete</em>. Phase 3 covers this scenario fully.
+        </p>
+        <span class="state live">live in this prototype</span>
+      </div>
+
+      <div class="road">
+        <div class="n">ii.</div>
+        <h4>Four-party group negotiation</h4>
+        <p>
+          A, B, C, D find a common time. The orchestration is no longer
+          request-response — it's a coordinator pattern. Whoever
+          convenes drives the protocol; the trust layer scopes each
+          bilateral exchange.
+        </p>
+        <p style="font-family:var(--mono);font-size:11.5px;color:var(--ink-mute);">
+          backend needed: multi-party SDK extension on top of Mesherra's
+          two-party primitive. Mesherra's policy + receipts apply
+          per-bilateral with no change.
+        </p>
+        <span class="state queued">next backend slice</span>
+      </div>
+
+      <div class="road">
+        <div class="n">iii.</div>
+        <h4>Cascading reschedule</h4>
+        <p>
+          A asks B for a slot B has with C. B's agent reasons about
+          tradeoffs and negotiates with C's agent to free the slot.
+          Two delegation chains, three signed exchanges.
+        </p>
+        <p style="font-family:var(--mono);font-size:11.5px;color:var(--ink-mute);">
+          backend needed: LLM-driven scheduling agent + per-user policy
+          governing what the agent may propose autonomously. The trust
+          layer is unchanged — only the agent gets smarter.
+        </p>
+        <span class="state distant">after scenario ii</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COLOPHON ------------------------------------------------------------ -->
+<section class="colophon">
+  <div class="shell">
+    <div class="cols">
+      <div>
+        <h5>The metaphor</h5>
+        <p>
+          In Roman antiquity, two parties broke a clay or bone tile —
+          a <em>tessera</em> — in half. Each kept one. Descendants
+          centuries later who had never met could fit the halves
+          together and prove the original bond by the precision of
+          the fit.
+        </p>
+        <p>
+          Mesherra is the digital tessera. Trust holds without anyone
+          trusting anyone in advance: the two halves either fit, or
+          they don't.
+        </p>
+        <div class="signature">— after centuries, a fit.</div>
+      </div>
+
+      <div>
+        <h5>The repos</h5>
+        <p><strong>Mesherra</strong> — the trust layer (Python). Provenance, identity, scoped disclosure.</p>
+        <p><strong>MeshyCal</strong> — the first Delegation. Domain-specific scheduling agent + this UI.</p>
+        <p>Both repos depend strictly downstream: MeshyCal imports Mesherra, never the reverse.</p>
+      </div>
+
+      <div>
+        <h5>This prototype</h5>
+        <p>Single-file HTML/CSS/JS. No build step. Runs anywhere.</p>
+        <p>Type: Fraunces (display), Newsreader (body), IBM&nbsp;Plex&nbsp;Mono (data).</p>
+        <p>Palette: parchment, ink, terracotta, jade, gold leaf.</p>
+        <p>Animations: hand-tuned cubic-bezier curves. No external motion library.</p>
+      </div>
+    </div>
+
+    <p class="small">
+      mmxxvi · meshycal phase 4 prototype · synthetic data only · est. 2026
+    </p>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* =========================================================================
+ *  Demo orchestration — uses safe DOM construction (no innerHTML for content).
+ *
+ *  Lives in two modes:
+ *
+ *  * BACKEND mode — fetches scenario data from the local FastAPI bridge
+ *    (see demos/phase_4_prototype/server/). All hashes, signatures, and
+ *    ledger entries displayed are *real* SHA-256(JCS()) / Ed25519
+ *    outputs from a live Mesherra Phase 3 run.
+ *  * DEMO mode — backend not reachable. Falls back to a choreographed
+ *    animation with seeded pseudo-hashes so the page is still useful
+ *    when opened from a raw file:// URL.
+ *
+ *  The on-screen "backend" badge announces which mode is active.
+ * ========================================================================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  const API_BASE = (window.MESHYCAL_API_BASE || "http://127.0.0.1:8765").replace(/\/$/, "");
+
+  const runBtn = $("runBtn");
+  const resetBtn = $("resetBtn");
+  const runStatus = $("runStatus");
+  const backendStatus = $("backendStatus");
+  const tesseraFit = $("tesseraFit");
+  const payloadB = $("payloadB");
+  const ledgerBodyA = $("ledgerBodyA");
+  const ledgerBodyB = $("ledgerBodyB");
+  const stepIndicator = $("stepIndicator");
+
+  let backendOk = false;
+  // Holds the last fetched real scenario result so animation beats can
+  // peek at it (real hashes, real ledger entries).
+  let lastReal = null;
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function probeBackend() {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 1500);
+      const res = await fetch(API_BASE + "/healthz", { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) throw new Error("non-2xx");
+      const body = await res.json();
+      backendOk = body && body.status === "ok";
+    } catch (_) {
+      backendOk = false;
+    }
+    renderBackendBadge();
+  }
+
+  function renderBackendBadge() {
+    if (backendOk) {
+      backendStatus.style.color = "hsl(155 40% 70%)";
+      backendStatus.style.borderColor = "hsl(155 30% 33%)";
+      backendStatus.textContent = "● backend live · real cryptography";
+    } else {
+      backendStatus.style.color = "hsl(13 60% 65%)";
+      backendStatus.style.borderColor = "hsl(13 50% 35%)";
+      backendStatus.textContent = "○ backend offline · animation mode";
+    }
+  }
+
+  async function fetchTwoParty() {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const res = await fetch(API_BASE + "/scenarios/two-party/run", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "content-type": "application/json" },
+      });
+      clearTimeout(t);
+      if (!res.ok) throw new Error("non-2xx from /scenarios/two-party/run");
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function clearChildren(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function elem(tag, opts = {}, ...children) {
+    const e = document.createElement(tag);
+    if (opts.className) e.className = opts.className;
+    if (opts.text != null) e.textContent = opts.text;
+    if (opts.attrs) for (const k in opts.attrs) e.setAttribute(k, opts.attrs[k]);
+    for (const c of children) if (c != null) e.appendChild(c);
+    return e;
+  }
+
+  function setStep(n) {
+    stepIndicator.querySelectorAll(".step").forEach((el) => {
+      const s = parseInt(el.dataset.step, 10);
+      el.classList.toggle("active", s === n);
+      el.classList.toggle("done", s < n);
+    });
+  }
+
+  function setStatus(msg) { runStatus.textContent = msg; }
+
+  function setPayloadBEmpty() {
+    clearChildren(payloadB);
+    payloadB.classList.add("empty");
+    payloadB.textContent = "— nothing yet —";
+  }
+
+  function setPayloadBScoped() {
+    clearChildren(payloadB);
+    payloadB.classList.remove("empty");
+
+    if (lastReal && lastReal.iris_scoped_payload) {
+      // Render the actual scoped payload Marius received.
+      const sp = lastReal.iris_scoped_payload;
+      if (Array.isArray(sp.candidates)) {
+        payloadB.appendChild(elem("div", {
+          text: "candidates  →  " + sp.candidates.length + " slots",
+        }));
+      }
+      if (sp.duration_minutes != null) {
+        payloadB.appendChild(elem("div", {
+          text: "duration_minutes  →  " + sp.duration_minutes,
+        }));
+      }
+      if (sp.constraint_hints && sp.constraint_hints.tz) {
+        payloadB.appendChild(elem("div", {
+          text: "constraint_hints  →  {tz: \"" + sp.constraint_hints.tz + "\"}",
+        }));
+      }
+      payloadB.appendChild(elem("div", {
+        className: "ok-line",
+        text: "✓ verified · hash " + lastReal.scoped_payload_hash.slice(0, 12) + "…",
+      }));
+    } else {
+      // Animation-mode fallback.
+      payloadB.appendChild(elem("div", { text: "candidates  →  3 slots" }));
+      payloadB.appendChild(elem("div", { text: "duration_minutes  →  30" }));
+      payloadB.appendChild(elem("div", { text: "constraint_hints  →  {tz: \"Europe/Lisbon\"}" }));
+      payloadB.appendChild(elem("div", { className: "ok-line", text: "✓ verified · signed by iris" }));
+    }
+  }
+
+  function setLedgerEmpty(body, message) {
+    clearChildren(body);
+    const empty = elem("div", { className: "ledger-empty" });
+    empty.textContent = message;
+    body.appendChild(empty);
+  }
+
+  function ledgerRow(label, value, valueClass) {
+    const row = elem("div", { className: "row" });
+    row.appendChild(elem("span", { className: "k", text: label }));
+    const v = elem("span", { className: "v" + (valueClass ? " " + valueClass : ""), text: value });
+    row.appendChild(v);
+    return row;
+  }
+
+  function appendLedgerEntry(body, { seq, ts, action, op, actor, counterpart, hash }) {
+    const entry = elem("div", { className: "ledger-entry" });
+    entry.appendChild(elem("span", {
+      className: "seq",
+      text: String(seq).padStart(2, "0") + ".",
+    }));
+    const bodyEl = elem("div", { className: "body" });
+    bodyEl.appendChild(ledgerRow("action_type", action, action === "emit" ? "emit" : "receive"));
+    bodyEl.appendChild(ledgerRow("operation", op));
+    bodyEl.appendChild(ledgerRow("actor", actor));
+    bodyEl.appendChild(ledgerRow("counterpart", counterpart));
+    bodyEl.appendChild(ledgerRow("timestamp", ts));
+    bodyEl.appendChild(ledgerRow("payload_hash", hash, "hash"));
+    entry.appendChild(bodyEl);
+    body.appendChild(entry);
+  }
+
+  function fakeHash(seed) {
+    // Deterministic-looking hex string for the demo. The real product
+    // shows SHA-256(JCS(payload)). The first 16 chars are what the
+    // default ledger view truncates to.
+    const chars = "0123456789abcdef";
+    let h = "";
+    let s = seed;
+    for (let i = 0; i < 64; i++) {
+      s = (s * 31 + 17) % 4093;
+      h += chars[s % 16];
+    }
+    return h;
+  }
+
+  function reset() {
+    setStep(0);
+    setStatus("ready — press to begin");
+    runBtn.disabled = false;
+    runBtn.textContent = "Request meeting";
+
+    document.querySelectorAll(".field-tile").forEach((t) => {
+      t.classList.remove("evaporating", "evaporated");
+    });
+
+    setPayloadBEmpty();
+    setLedgerEmpty(ledgerBodyA, "— no entries yet — press Request meeting to begin —");
+    setLedgerEmpty(ledgerBodyB, "— no entries yet —");
+
+    // Restore both 13:00 slots to their free state for a fresh run.
+    unbookSlot("iris-tue-1300", {
+      title: "— free —",
+      attendees: "candidate · 30 min",
+    });
+    unbookSlot("marius-tue-1300", {
+      title: "— free —",
+      attendees: "match · 30 min",
+    });
+
+    tesseraFit.classList.remove("active");
+  }
+
+  async function runScenario1() {
+    runBtn.disabled = true;
+    runBtn.textContent = "Running…";
+
+    // Kick off the real backend call ASAP if available. The animation
+    // beats below run on a fixed schedule for storytelling; by the
+    // time we get to the ledger-write step the fetch has long since
+    // completed (real run takes ~200ms; the animation takes ~8s).
+    let backendPromise = null;
+    if (backendOk) {
+      backendPromise = fetchTwoParty().catch((err) => {
+        console.warn("[meshycal] backend call failed; falling back:", err);
+        backendOk = false;
+        renderBackendBadge();
+        return null;
+      });
+    }
+
+    setStep(1);
+    setStatus("step i — Iris' agent builds the rich payload (5 fields)");
+    await sleep(1100);
+
+    setStep(2);
+    setStatus("step ii — A's airlock evaporates calendar_titles + attendee_emails");
+    document.querySelectorAll(".field-tile.blocked").forEach((t) => {
+      t.classList.add("evaporating");
+    });
+    await sleep(900);
+    document.querySelectorAll(".field-tile.blocked").forEach((t) => {
+      t.classList.add("evaporated");
+    });
+    await sleep(700);
+
+    setStep(3);
+    setStatus("step iii — scoped bytes cross the wire (3 fields, SHA-256 signed)");
+
+    // If a real backend call was kicked off, wait for it before
+    // populating Marius' panel — we want to display the actual scoped
+    // hash, not a fake one.
+    if (backendPromise) {
+      lastReal = await backendPromise;
+      if (lastReal) {
+        setStatus("step iii — real scoped hash " + lastReal.scoped_payload_hash.slice(0, 16) + "…");
+      }
+    }
+    await sleep(900);
+
+    setPayloadBScoped();
+
+    await sleep(900);
+    setStep(4);
+    setStatus("step iv — Marius' agent picks tue 13:00 from the 3 candidates");
+    await sleep(1200);
+
+    setStep(5);
+    setStatus("step v — Marius signs an acceptance; A's airlock receives one slot");
+    await sleep(1000);
+
+    setStep(6);
+    setStatus("step vi — both receipts written, hash chains intact, halves fit");
+    tesseraFit.classList.add("active");
+
+    let irisEntries, mariusEntries;
+    if (lastReal) {
+      // Real Mesherra ledger entries from the FastAPI bridge.
+      irisEntries = lastReal.iris_ledger.map((r) => ({
+        seq: r.sequence,
+        ts: r.timestamp,
+        action: r.action_type,
+        op: r.operation,
+        actor: r.actor,
+        counterpart: r.counterpart,
+        hash: r.payload_hash,
+      }));
+      mariusEntries = lastReal.marius_ledger.map((r) => ({
+        seq: r.sequence,
+        ts: r.timestamp,
+        action: r.action_type,
+        op: r.operation,
+        actor: r.actor,
+        counterpart: r.counterpart,
+        hash: r.payload_hash,
+      }));
+    } else {
+      // Animation-mode fallback.
+      const ts1 = "2026-05-26T13:00:14Z";
+      const ts2 = "2026-05-26T13:00:18Z";
+      const proposalHash = fakeHash(7);
+      const acceptanceHash = fakeHash(13);
+      irisEntries = [
+        { seq: 0, ts: ts1, action: "emit", op: "proposal",
+          actor: "iris@meshycal.demo", counterpart: "marius@meshycal.demo",
+          hash: proposalHash },
+        { seq: 1, ts: ts2, action: "receive", op: "acceptance",
+          actor: "marius@meshycal.demo", counterpart: "iris@meshycal.demo",
+          hash: acceptanceHash },
+      ];
+      mariusEntries = [
+        { seq: 0, ts: ts1, action: "receive", op: "proposal",
+          actor: "iris@meshycal.demo", counterpart: "marius@meshycal.demo",
+          hash: proposalHash },
+        { seq: 1, ts: ts2, action: "emit", op: "acceptance",
+          actor: "marius@meshycal.demo", counterpart: "iris@meshycal.demo",
+          hash: acceptanceHash },
+      ];
+    }
+
+    clearChildren(ledgerBodyA);
+    irisEntries.forEach((e) => appendLedgerEntry(ledgerBodyA, e));
+
+    clearChildren(ledgerBodyB);
+    mariusEntries.forEach((e) => appendLedgerEntry(ledgerBodyB, e));
+
+    await sleep(2200);
+    tesseraFit.classList.remove("active");
+
+    // Step 7 — the calendars actually change. The signed acceptance is
+    // the proof; the *outcome* is a new Meeting Object on both sides.
+    setStep(7);
+    setStatus("step vii — both calendars get a new Meeting Object at tue 13:00");
+    bookSlot("iris-tue-1300", {
+      title: "Meeting with Marius",
+      attendees: "tessera ref · 30 min · signed",
+    });
+    await sleep(600);
+    bookSlot("marius-tue-1300", {
+      title: "Meeting with Iris",
+      attendees: "tessera ref · 30 min · signed",
+    });
+    await sleep(1100);
+
+    const tail = lastReal
+      ? "done — real run in " + lastReal.duration_ms + "ms. both books match. press Reset to run again."
+      : "done — both books match (animation mode). press Reset to run again.";
+    setStatus(tail);
+    runBtn.disabled = false;
+    runBtn.textContent = "Run again";
+  }
+
+  function bookSlot(slotId, { title, attendees }) {
+    const slot = document.querySelector('[data-slot="' + slotId + '"]');
+    if (!slot) return;
+    slot.classList.remove("free");
+    slot.classList.add("booking");
+    const titleEl = slot.querySelector(".title");
+    const attendeesEl = slot.querySelector(".attendees");
+    if (titleEl) titleEl.textContent = title;
+    if (attendeesEl) attendeesEl.textContent = attendees;
+    // Drop the flash class once the animation finishes so the steady-
+    // state booked styling takes over.
+    setTimeout(() => {
+      slot.classList.remove("booking");
+      slot.classList.add("booked");
+    }, 600);
+  }
+
+  function unbookSlot(slotId, { title, attendees }) {
+    const slot = document.querySelector('[data-slot="' + slotId + '"]');
+    if (!slot) return;
+    slot.classList.remove("booked", "booking");
+    slot.classList.add("free");
+    const titleEl = slot.querySelector(".title");
+    const attendeesEl = slot.querySelector(".attendees");
+    if (titleEl) titleEl.textContent = title;
+    if (attendeesEl) attendeesEl.textContent = attendees;
+  }
+
+  runBtn.addEventListener("click", () => {
+    if (runBtn.textContent === "Run again") {
+      reset();
+    }
+    runScenario1();
+  });
+  resetBtn.addEventListener("click", reset);
+
+  document.querySelectorAll(".scenarios-tabs button").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const sc = parseInt(tab.dataset.scenario, 10);
+      document.querySelectorAll(".scenarios-tabs button").forEach((b) =>
+        b.setAttribute("aria-selected", b === tab ? "true" : "false")
+      );
+      if (sc === 1) {
+        setStatus("ready — press to begin");
+      } else if (sc === 2) {
+        setStatus("scenario ii — group find — backend work in progress");
+      } else {
+        setStatus("scenario iii — cascading reschedule — backend + agent reasoning needed");
+      }
+    });
+  });
+
+  reset();
+  probeBackend();
+  // Re-probe every 10s in case the user starts the server after page load.
+  setInterval(probeBackend, 10000);
+})();
+</script>
+
+</body>
+</html>
