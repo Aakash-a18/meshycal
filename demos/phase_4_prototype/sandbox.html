@@ -1174,6 +1174,21 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   white-space: nowrap;
 }
 
+/* Compact mode when events sit side-by-side within an overlap cluster */
+.sb-grid-event--shared-col {
+  padding-left: 6px;
+  padding-right: 4px;
+  font-size: 9.5px;
+}
+.sb-grid-event--shared-col .sb-grid-event-time {
+  font-size: 9px;
+}
+.sb-grid-event--shared-col .sb-grid-event-title {
+  font-size: 11px;
+  -webkit-line-clamp: 1;
+}
+.sb-grid-event--shared-col .sb-grid-event-attendees { display: none; }
+
 /* Per-principal-slot tint */
 .sb-grid-event--slot-0 { background: hsl(40 55% 86%);  border-left-color: hsl(40 60% 50%); }
 .sb-grid-event--slot-1 { background: hsl(155 28% 80%); border-left-color: var(--jade); }
@@ -3364,7 +3379,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       if (p.calendar.length === 0) {
         col.appendChild(elem("div", { className: "sb-grid-col-empty", text: "no events" }));
       } else {
-        p.calendar.forEach(ev => col.appendChild(buildGridEvent(p, ev)));
+        const laidOut = layoutEventsInColumn(p.calendar);
+        laidOut.forEach(item => col.appendChild(buildGridEvent(p, item.ev, item)));
       }
       colsWrap.appendChild(col);
     });
@@ -3375,7 +3391,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     renderFreeBands();
   }
 
-  function buildGridEvent(p, ev) {
+  function buildGridEvent(p, ev, layout) {
     const pos = gridEventPosition(ev.time, ev.duration);
     const node = elem("div", {
       className: "sb-grid-event sb-grid-event--slot-" + p.colorSlot + (ev.isBlocking ? " blocking" : ""),
@@ -3386,10 +3402,83 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     });
     node.style.top = pos.top + "px";
     node.style.height = pos.height + "px";
+
+    // Side-by-side layout when events overlap within a principal's column.
+    // layout.totalCols > 1 means this event shares its time span with others;
+    // split the column horizontally so neither hides the other.
+    if (layout && layout.totalCols > 1) {
+      const widthPct = 100 / layout.totalCols;
+      node.style.left  = "calc(" + (layout.col * widthPct) + "% + 3px)";
+      node.style.width = "calc(" + widthPct + "% - 6px)";
+      node.style.right = "auto";
+      node.classList.add("sb-grid-event--shared-col");
+    }
+
     node.appendChild(elem("div", { className: "sb-grid-event-time", text: ev.time + " · " + ev.duration + "m" }));
     node.appendChild(elem("div", { className: "sb-grid-event-title", text: ev.title || "(untitled)" }));
     if (ev.attendees) node.appendChild(elem("div", { className: "sb-grid-event-attendees", text: ev.attendees }));
     return node;
+  }
+
+  /* -----------------------------------------------------------------
+   *  Lays out a principal's calendar events into sub-columns so
+   *  overlapping events sit side-by-side instead of on top of each
+   *  other. Same approach Google Calendar uses.
+   *
+   *  Algorithm:
+   *  1. Sort events by start time.
+   *  2. Group into "clusters" — runs of events where each overlaps
+   *     with at least one other in the same cluster (transitively).
+   *  3. Within each cluster, greedily assign each event the first
+   *     sub-column whose previous event has already ended. The
+   *     cluster's totalCols is the number of sub-columns it used.
+   *  4. Every event in a cluster gets the same totalCols so they
+   *     all split the column width evenly.
+   * ----------------------------------------------------------------- */
+  function layoutEventsInColumn(events) {
+    if (!events || events.length === 0) return [];
+
+    const items = events.map(ev => {
+      const start = timeToMinutes(ev.time);
+      const end   = start + (parseInt(ev.duration, 10) || 30);
+      return { ev, start, end };
+    }).sort((a, b) => a.start - b.start || a.end - b.end);
+
+    // Cluster pass
+    const clusters = [];
+    let cur = [];
+    let curEnd = -Infinity;
+    for (const it of items) {
+      if (it.start >= curEnd) {
+        if (cur.length) clusters.push(cur);
+        cur = [it];
+        curEnd = it.end;
+      } else {
+        cur.push(it);
+        if (it.end > curEnd) curEnd = it.end;
+      }
+    }
+    if (cur.length) clusters.push(cur);
+
+    // Greedy sub-column assignment within each cluster
+    const out = [];
+    for (const cluster of clusters) {
+      const colEnds = []; // colEnds[i] = end time of last event placed in sub-column i
+      for (const it of cluster) {
+        let col = -1;
+        for (let i = 0; i < colEnds.length; i++) {
+          if (colEnds[i] <= it.start) { col = i; break; }
+        }
+        if (col === -1) { col = colEnds.length; colEnds.push(0); }
+        colEnds[col] = it.end;
+        it.col = col;
+      }
+      const totalCols = colEnds.length;
+      for (const it of cluster) {
+        out.push({ ev: it.ev, col: it.col, totalCols: totalCols, start: it.start, end: it.end });
+      }
+    }
+    return out;
   }
 
   /* -----------------------------------------------------------------
