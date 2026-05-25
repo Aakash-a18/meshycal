@@ -1489,6 +1489,151 @@ button[disabled], .btn[disabled] {
   .s3-arrows-layer { display: none; }
 }
 
+/* ----- s3 narrative band ----- */
+.s3-narrative-band {
+  background: hsl(40 28% 91%);
+  border: 1px solid hsl(40 20% 78%);
+  border-bottom: none;
+  padding: 22px 28px 20px;
+}
+.s3-nb-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(40 20% 52%);
+  margin-bottom: 10px;
+}
+.s3-nb-text {
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: hsl(222 28% 18%);
+  margin: 0;
+  font-style: italic;
+  transition: opacity 300ms ease;
+}
+.s3-nb-text--fading {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+@media (max-width: 1080px) {
+  .s3-narrative-band { padding: 16px 18px 14px; }
+  .s3-nb-text { font-size: 14px; }
+}
+
+/* ----- s3 dialogue panel ----- */
+.s3-dialogue-panel {
+  background: hsl(220 22% 7%);
+  border: 1px solid hsl(220 18% 22%);
+  border-top: none;
+}
+.s3-dp-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid hsl(220 18% 18%);
+}
+.s3-dp-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+}
+.s3-dp-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: hsl(40 15% 40%);
+  letter-spacing: 0.04em;
+}
+.s3-dp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
+  min-height: 40px;
+}
+
+/* Message row */
+.s3-dm {
+  display: flex;
+  gap: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid hsl(220 18% 13%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 350ms ease, transform 350ms ease;
+}
+.s3-dm:last-child { border-bottom: none; }
+.s3-dm--visible { opacity: 1; transform: translateY(0); }
+
+.s3-dm-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: hsl(40 15% 45%);
+  letter-spacing: 0.06em;
+  width: 160px;
+  flex-shrink: 0;
+  padding-top: 2px;
+  line-height: 1.5;
+}
+.s3-dm-time { display: block; color: hsl(40 20% 38%); }
+.s3-dm-from { display: block; font-weight: 500; color: hsl(40 20% 55%); }
+
+.s3-dm-bubble {
+  flex: 1;
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: hsl(40 20% 78%);
+  padding-left: 16px;
+  border-left: 3px solid transparent;
+  font-style: italic;
+}
+.s3-dm-direction {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: block;
+  color: hsl(40 15% 45%);
+}
+
+/* Per-agent left-border accent */
+.s3-dm--iris   .s3-dm-bubble { border-left-color: hsl(40 55% 68%); }
+.s3-dm--iris   .s3-dm-direction { color: hsl(40 45% 60%); }
+.s3-dm--marius .s3-dm-bubble { border-left-color: var(--jade); }
+.s3-dm--marius .s3-dm-direction { color: hsl(155 30% 52%); }
+.s3-dm--atlas  .s3-dm-bubble { border-left-color: var(--terracotta); }
+.s3-dm--atlas  .s3-dm-direction { color: hsl(13 45% 58%); }
+
+/* Thinking row */
+.s3-dm--thinking .s3-dm-bubble { color: hsl(40 15% 50%); font-style: italic; }
+.s3-dm--thinking .s3-dm-direction { color: hsl(40 12% 40%); }
+
+/* Inline spinner */
+.s3-dm-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid hsl(40 30% 35% / 0.4);
+  border-top-color: hsl(40 50% 52%);
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 8px;
+  animation: s3SpinnerRotate 800ms linear infinite;
+}
+
+@media (max-width: 1080px) {
+  .s3-dp-header { flex-direction: column; gap: 4px; }
+  .s3-dm-meta { width: 110px; }
+  .s3-dm { padding: 8px 14px; }
+}
+
 </style>
 </head>
 <body>
@@ -2096,6 +2241,12 @@ button[disabled], .btn[disabled] {
     <!-- SCENARIO 3 — cascading reschedule -->
     <div data-scenario-content="3" id="scenario-3-content" aria-hidden="true" style="display:none">
 
+      <!-- s3-narrative-band: story context, sits above the stage -->
+      <div class="s3-narrative-band" id="s3-narrative-band" aria-live="polite">
+        <div class="s3-nb-eyebrow">the scenario</div>
+        <p class="s3-nb-text" id="s3-nb-text">Iris wants a 30-minute meeting with Marius on Tuesday at 14:00. Marius already has that slot booked with Atlas for their weekly project sync. Watch what happens when Iris's request collides with Marius's calendar.</p>
+      </div>
+
       <div class="stage s3-stage" id="s3-stage">
 
         <!-- final tessera overlay -->
@@ -2217,11 +2368,11 @@ button[disabled], .btn[disabled] {
           </div>
           <div class="panel-label">atlas' calendar — june 2</div>
           <div class="calendar" id="s3-cal-atlas">
-            <div class="event free s3-cal-atlas-empty">
-              <span class="time">—</span>
+            <div class="event s3-blocking" data-slot="s3-atlas-1400">
+              <span class="time">14:00</span>
               <div>
-                <div class="title">no events yet</div>
-                <div class="attendees">atlas' internal calendar not modeled in v0</div>
+                <div class="title">synthetic-project-sync</div>
+                <div class="attendees">45 min · marius</div>
               </div>
             </div>
           </div>
@@ -2231,6 +2382,17 @@ button[disabled], .btn[disabled] {
           <div class="s3-payload-panel" id="s3-payload-atlas-acceptance"><div class="s3-pp-pending">— pending —</div></div>
         </div>
 
+      </div>
+
+      <!-- s3-dialogue-panel: inter-agent conversation transcript -->
+      <div class="s3-dialogue-panel" id="s3-dialogue-panel" aria-label="Agent conversation transcript" aria-live="polite">
+        <div class="s3-dp-header">
+          <span class="s3-dp-eyebrow">agent conversation</span>
+          <span class="s3-dp-hint">plain-English transcript of what the agents said to each other</span>
+        </div>
+        <div class="s3-dp-body" id="s3-dp-body">
+          <!-- message rows appended via s3DialogueAppend() -->
+        </div>
       </div>
 
       <div class="s3-task-id-bar" id="s3-task-id-bar">
@@ -3303,6 +3465,54 @@ button[disabled], .btn[disabled] {
   }
   function s3SetStatus(msg) { s3RunStatus.textContent = msg; }
 
+  function s3NarrativeBeat(text) {
+    const el = $("s3-nb-text");
+    if (!el) return;
+    el.classList.add("s3-nb-text--fading");
+    setTimeout(function () {
+      el.textContent = text;
+      el.classList.remove("s3-nb-text--fading");
+    }, 200);
+  }
+
+  function s3DialogueAppend(agentClass, fromLabel, directionLabel, bodyText, showSpinner) {
+    const body = $("s3-dp-body");
+    if (!body) return null;
+
+    const row = elem("div", { className: "s3-dm s3-dm--" + agentClass });
+
+    const meta = elem("div", { className: "s3-dm-meta" });
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2, "0");
+    const mm = now.getMinutes().toString().padStart(2, "0");
+    const ss = now.getSeconds().toString().padStart(2, "0");
+    meta.appendChild(elem("span", { className: "s3-dm-time", text: hh + ":" + mm + ":" + ss }));
+    meta.appendChild(elem("span", { className: "s3-dm-from", text: fromLabel }));
+    row.appendChild(meta);
+
+    const bubble = elem("div", { className: "s3-dm-bubble" });
+    bubble.appendChild(elem("span", { className: "s3-dm-direction", text: directionLabel }));
+    bubble.appendChild(document.createTextNode(bodyText));
+
+    if (showSpinner) {
+      const spin = document.createElement("span");
+      spin.className = "s3-dm-spinner";
+      spin.setAttribute("aria-hidden", "true");
+      bubble.appendChild(spin);
+    }
+
+    row.appendChild(bubble);
+    body.appendChild(row);
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        row.classList.add("s3-dm--visible");
+      });
+    });
+
+    return row;
+  }
+
   async function fetchCascading() {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 20000);
@@ -3419,6 +3629,13 @@ button[disabled], .btn[disabled] {
     setTimeout(() => { if (slot.parentNode) slot.parentNode.removeChild(slot); }, 400);
   }
 
+  function s3MoveAtlasSlot() {
+    const slot = document.querySelector('[data-slot="s3-atlas-1400"]');
+    if (!slot) return;
+    slot.classList.add("s3-slot-moving-out");
+    setTimeout(function () { if (slot.parentNode) slot.parentNode.removeChild(slot); }, 400);
+  }
+
   function s3GainSlot(calId, slotId, time, title, attendees) {
     const cal = document.getElementById(calId);
     if (!cal) return;
@@ -3443,6 +3660,7 @@ button[disabled], .btn[disabled] {
     s3RunBtn.textContent = "Running…";
 
     let s3Real = null;
+    let s3ThinkingRow = null;
     // Do NOT .catch() here — the rejection must propagate into the try
     // block below so s3RenderAbort fires on server 500 (e.g.
     // CascadeAbortedError from a reasoner that returned None). Silently
@@ -3467,11 +3685,20 @@ button[disabled], .btn[disabled] {
     try {
       // STEP 1
       s3SetStep(1);
+      s3NarrativeBeat("Iris is building her proposal: Tuesday at 14:00, 30 minutes. Her agent will scope it — only the slot and duration will cross the wire.");
       s3SetStatus("step i — Iris builds proposal: 14:00 · 30 min");
       await sleep(1000);
 
       // STEP 2
       s3SetStep(2);
+      s3NarrativeBeat("Iris's request has arrived at Marius's airlock. The scoped payload is in flight — calendar titles and attendee emails were stripped before it left.");
+      s3DialogueAppend(
+        "iris",
+        "iris → marius",
+        "proposal",
+        "“Iris wants 30 minutes on Tuesday at 14:00. Are you available?”",
+        false
+      );
       s3SetStatus("step ii — Iris→Marius · scoped bytes cross · titles + emails blocked");
       const a1 = $("s3-arrow-iris-marius");
       if (a1) a1.classList.add("s3-arrow--active");
@@ -3479,6 +3706,14 @@ button[disabled], .btn[disabled] {
 
       // STEP 3 — the brand beat.
       s3SetStep(3);
+      s3NarrativeBeat("Marius's agent noticed the conflict. Tuesday 14:00 is already booked — that's the project sync with Atlas. The agent is reasoning about whether it can free that slot…");
+      s3ThinkingRow = s3DialogueAppend(
+        "marius s3-dm--thinking",
+        "marius (thinking…)",
+        "internal",
+        "scheduled conflict: project-sync with atlas at 14:00. Evaluating whether to move it…",
+        true
+      );
       s3SetStatus("step iii — agent reasoning…");
       const av = $("s3-avatar-marius");
       if (av) av.classList.add("s3-avatar-reasoning");
@@ -3499,6 +3734,20 @@ button[disabled], .btn[disabled] {
 
       // STEP 4
       s3SetStep(4);
+      s3NarrativeBeat("Marius's agent has a plan. It's proposing to Atlas: can we shift the project sync from 14:00 to 16:00?");
+      if (s3ThinkingRow) {
+        s3ThinkingRow.classList.remove("s3-dm--visible");
+        const _tRow = s3ThinkingRow;
+        setTimeout(function () { if (_tRow.parentNode) _tRow.parentNode.removeChild(_tRow); }, 360);
+        s3ThinkingRow = null;
+      }
+      s3DialogueAppend(
+        "marius",
+        "marius → atlas",
+        "proposal",
+        "“We’re booked for project-sync at 14:00. Iris just asked for that slot. Can we move our sync to 16:00?”",
+        false
+      );
       s3StopReasoningSpinner();
       const rl4 = $("s3-reasoning-label");
       if (rl4) rl4.textContent = "marius' agent — dispatching to atlas";
@@ -3526,6 +3775,7 @@ button[disabled], .btn[disabled] {
 
       // STEP 5
       s3SetStep(5);
+      s3NarrativeBeat("Atlas accepted. The 14:00 slot is now free. Marius can honour Iris's request.");
       s3SetStatus("step v — Atlas accepts · Exchange B tessera fit");
       const recv = s3Real ? s3Real.marius_reschedule_proposal : reschedule;
       const acpt = s3Real ? s3Real.atlas_acceptance_payload : {
@@ -3554,6 +3804,14 @@ button[disabled], .btn[disabled] {
       if (a4) a4.classList.add("s3-arrow--active");
       await sleep(700);
 
+      s3DialogueAppend(
+        "atlas",
+        "atlas → marius",
+        "acceptance",
+        "“Confirmed. 16:00 works for me.”",
+        false
+      );
+
       const exB = s3Real ? s3Real.exchange_marius_atlas : null;
       s3AppendExchangeBadge("B", "M", "A",
         exB ? exB.proposal_payload_hash : s3FakeHashes.mariusEmitAtlas,
@@ -3563,10 +3821,19 @@ button[disabled], .btn[disabled] {
 
       // STEP 6
       s3SetStep(6);
+      s3NarrativeBeat("Marius confirmed to Iris: Tuesday 14:00 is yours. Three signed receipts in flight.");
       s3SetStatus("step vi — Marius→Iris · acceptance dispatched");
       await sleep(500);
       const a5 = $("s3-arrow-marius-iris");
       if (a5) a5.classList.add("s3-arrow--active");
+
+      s3DialogueAppend(
+        "marius",
+        "marius → iris",
+        "acceptance",
+        "“Confirmed. Tuesday 14:00 is yours.”",
+        false
+      );
 
       const exA = s3Real ? s3Real.exchange_iris_marius_proposal : null;
       s3AppendExchangeBadge("A", "I", "M",
@@ -3588,6 +3855,7 @@ button[disabled], .btn[disabled] {
 
       // STEP 7
       s3SetStep(7);
+      s3NarrativeBeat("Three tessera fits. Every receipt matches its counterpart. The trust layer verified the chain.");
       s3SetStatus("step vii — three tessera fits · receipts written");
 
       const ts1 = s3Real && s3Real.iris_ledger && s3Real.iris_ledger[0]
@@ -3630,15 +3898,15 @@ button[disabled], .btn[disabled] {
 
       // STEP 8 — calendar deltas.
       s3SetStep(8);
+      s3NarrativeBeat("Three calendars updated. Iris gains 14:00. Marius and Atlas both move their project sync to 16:00. The cascade is complete.");
       s3SetStatus("step viii — calendars updated across three principals");
       s3MoveSlot();
+      s3MoveAtlasSlot();
       await sleep(420);
       s3GainSlot("s3-cal-marius", "s3-marius-1600", "16:00", "synthetic-project-sync", "atlas · rescheduled · signed");
       await sleep(80);
       s3GainSlot("s3-cal-iris", "s3-iris-1400", "14:00", "synthetic-iris-marius-meeting", "marius · tessera ref · signed");
       await sleep(400);
-      const atlasEmpty = $("s3-cal-atlas").querySelector(".s3-cal-atlas-empty");
-      if (atlasEmpty) atlasEmpty.remove();
       s3GainSlot("s3-cal-atlas", "s3-atlas-1600", "16:00", "synthetic-project-sync", "marius · rescheduled · signed");
       await sleep(1200);
 
@@ -3656,6 +3924,7 @@ button[disabled], .btn[disabled] {
 
   function s3Reset() {
     s3SetStep(0);
+    s3NarrativeBeat("Iris wants a 30-minute meeting with Marius on Tuesday at 14:00. Marius already has that slot booked with Atlas for their weekly project sync. Watch what happens when Iris's request collides with Marius's calendar.");
     s3SetStatus("ready — press to begin");
     s3RunBtn.disabled = false;
     s3RunBtn.textContent = "Request meeting";
@@ -3674,6 +3943,7 @@ button[disabled], .btn[disabled] {
     if (eyebrow) eyebrow.textContent = "agent reasoning…";
 
     clearChildren(s3BadgesEl);
+    clearChildren($("s3-dp-body"));
 
     clearChildren(s3TaskIdBar);
     s3TaskIdBar.appendChild(elem("span", { className: "s3-taskid-placeholder", text: "task IDs will appear when the cascade completes" }));
@@ -3687,20 +3957,45 @@ button[disabled], .btn[disabled] {
 
     s3TesseraFit.classList.remove("active");
 
+    // Reset Marius + Atlas calendars unconditionally.
+    // The previous version guarded with `!document.querySelector('[data-slot="s3-X-1400"]')`,
+    // but that fails the "Reset during step-8 fade window" race: the 14:00
+    // element is still in the DOM (with class s3-slot-moving-out, mid-fade),
+    // so the guard reads true-already-present and skips re-insertion. Then
+    // the pending 400ms removeChild timer fires and the calendar ends up empty.
+    // Fix: clearChildren the calendar and rebuild it idempotently. Any
+    // pending removeChild from s3MoveSlot/s3MoveAtlasSlot becomes a no-op
+    // (their setTimeout body checks `if (slot.parentNode)` before removing).
     const m1600 = document.querySelector('[data-slot="s3-marius-1600"]');
     if (m1600) m1600.remove();
     const mariusCal = $("s3-cal-marius");
-    if (mariusCal && !document.querySelector('[data-slot="s3-marius-1400"]')) {
+    if (mariusCal) {
+      clearChildren(mariusCal);
+      // Re-create the three initial events in order: 10:00, 14:00 (blocking), 15:30.
+      const m1000 = elem("div", { className: "event" });
+      m1000.appendChild(elem("span", { className: "time", text: "10:00" }));
+      const m1000Inner = elem("div");
+      m1000Inner.appendChild(elem("div", { className: "title", text: "synthetic-weekly-review" }));
+      m1000Inner.appendChild(elem("div", { className: "attendees", text: "60 min · solo" }));
+      m1000.appendChild(m1000Inner);
+      mariusCal.appendChild(m1000);
+
       const ev1400 = elem("div", { className: "event s3-blocking" });
       ev1400.dataset.slot = "s3-marius-1400";
       ev1400.appendChild(elem("span", { className: "time", text: "14:00" }));
-      const inner = elem("div");
-      inner.appendChild(elem("div", { className: "title", text: "synthetic-project-sync" }));
-      inner.appendChild(elem("div", { className: "attendees", text: "45 min · atlas" }));
-      ev1400.appendChild(inner);
-      const ev1530 = mariusCal.children[1];
-      if (ev1530) mariusCal.insertBefore(ev1400, ev1530);
-      else mariusCal.appendChild(ev1400);
+      const inner1400 = elem("div");
+      inner1400.appendChild(elem("div", { className: "title", text: "synthetic-project-sync" }));
+      inner1400.appendChild(elem("div", { className: "attendees", text: "45 min · atlas" }));
+      ev1400.appendChild(inner1400);
+      mariusCal.appendChild(ev1400);
+
+      const m1530 = elem("div", { className: "event" });
+      m1530.appendChild(elem("span", { className: "time", text: "15:30" }));
+      const m1530Inner = elem("div");
+      m1530Inner.appendChild(elem("div", { className: "title", text: "synthetic-1-on-1" }));
+      m1530Inner.appendChild(elem("div", { className: "attendees", text: "30 min · solo" }));
+      m1530.appendChild(m1530Inner);
+      mariusCal.appendChild(m1530);
     }
 
     const i1400 = document.querySelector('[data-slot="s3-iris-1400"]');
@@ -3709,14 +4004,16 @@ button[disabled], .btn[disabled] {
     const a1600 = document.querySelector('[data-slot="s3-atlas-1600"]');
     if (a1600) a1600.remove();
     const atlasCal = $("s3-cal-atlas");
-    if (atlasCal && !atlasCal.querySelector(".s3-cal-atlas-empty")) {
-      const placeholder = elem("div", { className: "event free s3-cal-atlas-empty" });
-      placeholder.appendChild(elem("span", { className: "time", text: "—" }));
-      const inner = elem("div");
-      inner.appendChild(elem("div", { className: "title", text: "no events yet" }));
-      inner.appendChild(elem("div", { className: "attendees", text: "atlas' internal calendar not modeled in v0" }));
-      placeholder.appendChild(inner);
-      atlasCal.appendChild(placeholder);
+    if (atlasCal) {
+      clearChildren(atlasCal);
+      const evAtlas1400 = elem("div", { className: "event s3-blocking" });
+      evAtlas1400.dataset.slot = "s3-atlas-1400";
+      evAtlas1400.appendChild(elem("span", { className: "time", text: "14:00" }));
+      const innerAtlas = elem("div");
+      innerAtlas.appendChild(elem("div", { className: "title", text: "synthetic-project-sync" }));
+      innerAtlas.appendChild(elem("div", { className: "attendees", text: "45 min · marius" }));
+      evAtlas1400.appendChild(innerAtlas);
+      atlasCal.appendChild(evAtlas1400);
     }
 
     clearChildren($("s3-payload-atlas"));
@@ -3732,6 +4029,8 @@ button[disabled], .btn[disabled] {
   }
 
   function s3RenderAbort(err) {
+    const abortMsg = (err && err.detail) || (err && err.message) || "unknown error";
+    s3NarrativeBeat("Cascade aborted. " + abortMsg);
     const msg = (err && err.detail) || (err && err.message) || "unknown error";
     const existing = document.querySelector(".s3-abort-banner");
     if (existing) existing.remove();
