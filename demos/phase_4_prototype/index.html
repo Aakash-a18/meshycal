@@ -1027,6 +1027,468 @@ button[disabled], .btn[disabled] {
   .scenarios-tabs { flex-direction: column; }
 }
 
+/* =========================================================================
+ * SCENARIO 2 — four-party group find
+ * All IDs and classes prefixed s2-.
+ * ========================================================================= */
+#s2-stage {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0;
+  background: hsl(220 22% 8%);
+  border: 1px solid hsl(220 18% 22%);
+  min-height: 660px;
+  position: relative;
+}
+#s2-panel-marius        { border-right: 1px solid hsl(220 18% 22%); }
+#s2-panel-iris          { }
+#s2-panel-wren          { border-left:  1px solid hsl(220 18% 22%); }
+#s2-panel-exchange-log  { border-right: 1px solid hsl(220 18% 22%); border-top: 1px solid hsl(220 18% 22%); }
+#s2-panel-atlas         { border-left:  1px solid hsl(220 18% 22%); border-right: 1px solid hsl(220 18% 22%); border-top: 1px solid hsl(220 18% 22%); }
+#s2-panel-funnel        { border-left:  1px solid hsl(220 18% 22%); border-top: 1px solid hsl(220 18% 22%); }
+
+#s2-stage .party { padding: 24px; }
+
+.s2-avatar-marius { background: var(--terracotta); color: var(--paper); }
+.s2-avatar-wren   { background: hsl(240 25% 52%); color: var(--paper); }
+.s2-avatar-atlas  { background: hsl(30 55% 42%);  color: var(--paper); }
+
+/* Exchange log inside #s2-panel-exchange-log */
+.s2-exchange-log {
+  padding: 22px 24px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: hsl(40 25% 65%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.s2-exchange-log .s2-exchange-log-head {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+  margin-bottom: 6px;
+}
+.s2-exchange-log-entry {
+  padding: 6px 0;
+  border-bottom: 1px dashed hsl(220 18% 18%);
+  color: hsl(40 25% 70%);
+}
+.s2-exchange-log-entry:last-child { border-bottom: none; }
+.s2-exchange-log-entry .s2-log-id {
+  color: var(--gold);
+  font-weight: 500;
+  margin-right: 6px;
+}
+
+/* Funnel inside #s2-panel-funnel */
+#s2-panel-funnel { padding: 24px; }
+#s2-funnel {
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 16px 0 0;
+}
+.s2-funnel-col {
+  flex: 1;
+  padding: 0 10px;
+  border-right: 1px solid hsl(220 18% 22%);
+  min-height: 120px;
+}
+.s2-funnel-col:last-child { border-right: none; }
+.s2-funnel-col-head {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: hsl(40 20% 55%);
+  margin-bottom: 10px;
+}
+
+.s2-slot-chip {
+  padding: 6px 10px;
+  border: 1px solid hsl(220 18% 24%);
+  background: hsl(220 22% 11%);
+  margin-bottom: 5px;
+  color: hsl(40 25% 75%);
+  font-size: 11px;
+  transition: all 400ms ease;
+}
+.s2-slot-chip.eliminated {
+  color: hsl(13 40% 45%);
+  text-decoration: line-through;
+  background: hsl(220 22% 9%);
+  opacity: 0.5;
+}
+.s2-slot-chip.chosen {
+  background: hsl(155 30% 18%);
+  border-color: var(--jade);
+  color: hsl(155 40% 75%);
+  border-left: 3px solid var(--jade);
+  animation: s2ChipChosenFlash 700ms ease forwards;
+}
+.s2-slot-chip.s2-no-overlap {
+  color: var(--terracotta);
+  border-color: var(--terracotta);
+  background: hsl(13 40% 10%);
+}
+@keyframes s2ChipChosenFlash {
+  0%   { background: hsl(155 30% 18%); }
+  35%  { background: hsl(40 70% 35%); }
+  100% { background: hsl(155 30% 18%); }
+}
+
+.s2-funnel-peer-group {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid hsl(220 18% 18%);
+}
+.s2-funnel-peer-group:last-child { border-bottom: none; }
+.s2-funnel-peer-initial {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+  margin-bottom: 5px;
+}
+
+/* Receipt table */
+.s2-receipt-table {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  margin-top: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.s2-receipt-table::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 30px,
+    hsl(34 25% 72% / 0.18) 30px 31px
+  );
+  pointer-events: none;
+}
+.s2-receipt-table > * { position: relative; z-index: 1; }
+
+.s2-receipt-head {
+  display: grid;
+  grid-template-columns: 48px 120px 72px 200px 200px 80px;
+  gap: 0;
+  padding: 10px 16px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.s2-receipt-row {
+  display: grid;
+  grid-template-columns: 48px 120px 72px 200px 200px 80px;
+  gap: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid hsl(34 18% 76%);
+  align-items: center;
+  transition: background 300ms ease;
+  opacity: 0;
+}
+.s2-receipt-row:last-child { border-bottom: none; }
+.s2-receipt-row.s2-populated {
+  opacity: 1;
+  animation: s2RowAppear 350ms ease forwards;
+}
+.s2-receipt-row .s2-exid {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+.s2-receipt-row .s2-peer { color: var(--ink); }
+.s2-receipt-row .s2-phase-badge {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  display: inline-block;
+}
+.s2-receipt-row .s2-phase-badge.query   { background: var(--jade-deep);       color: var(--paper); }
+.s2-receipt-row .s2-phase-badge.confirm { background: var(--terracotta-deep); color: var(--paper); }
+.s2-receipt-row .s2-hash {
+  font-size: 10.5px;
+  color: var(--ink-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+.s2-receipt-row .s2-verified {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--jade);
+}
+@keyframes s2RowAppear {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#s2-failure-banner {
+  display: none;
+  background: hsl(13 50% 14%);
+  border: 1px solid var(--terracotta);
+  color: var(--terracotta);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  padding: 16px 20px;
+  margin-top: 24px;
+  text-transform: uppercase;
+}
+#s2-failure-banner.s2-visible { display: block; animation: fadeIn 400ms ease forwards; }
+
+/* =========================================================================
+ * SCENARIO 3 — cascading reschedule
+ * All IDs and classes prefixed s3-.
+ * ========================================================================= */
+.s3-stage { grid-template-columns: 1fr 1.6fr 1fr; }
+
+.party.center {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+  border-left: 1px solid hsl(220 18% 22%);
+  border-right: 1px solid hsl(220 18% 22%);
+}
+.party.center .avatar { background: var(--jade); color: var(--paper); }
+
+.s3-avatar-atlas { background: hsl(30 55% 42%); color: var(--paper); }
+
+.s3-blocking {
+  border-left: 3px solid var(--terracotta);
+  background: hsl(13 25% 11%);
+}
+.s3-blocking .time { color: var(--terracotta); }
+.s3-blocking .title { color: hsl(13 50% 75%); font-style: italic; }
+
+.s3-reasoning-trace {
+  border: 1px solid hsl(40 25% 28% / 0.6);
+  background: hsl(222 28% 9%);
+  padding: 16px 18px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease, visibility 0s linear 400ms;
+  position: relative;
+}
+.s3-reasoning-trace::before {
+  content: "REASONING TRACE";
+  position: absolute;
+  top: -8px; left: 14px;
+  background: hsl(222 28% 9%);
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: hsl(40 25% 55%);
+}
+.s3-reasoning-trace--visible {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 400ms ease;
+}
+
+.s3-trace-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.s3-trace-eyebrow {
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: hsl(40 25% 55%);
+}
+.s3-trace-spinner {
+  display: inline-block; width: 12px; height: 12px;
+  border: 1.5px solid hsl(40 70% 53% / 0.3);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  opacity: 0;
+}
+.s3-trace-spinner--active { opacity: 1; animation: s3SpinnerRotate 800ms linear infinite; }
+@keyframes s3SpinnerRotate { to { transform: rotate(360deg); } }
+
+.s3-trace-fields { margin-bottom: 14px; }
+.s3-trace-field {
+  display: flex; gap: 10px; margin: 4px 0;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.s3-trace-field--visible { opacity: 1; transform: translateY(0); }
+.s3-tf-key { color: hsl(40 20% 55%); width: 190px; flex-shrink: 0; font-size: 11px; }
+.s3-tf-val { color: hsl(40 60% 78%); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.s3-trace-reason-label {
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: hsl(40 20% 50%);
+  margin-bottom: 8px; border-top: 1px solid hsl(220 18% 22%); padding-top: 10px;
+}
+.s3-trace-reason {
+  font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  color: hsl(40 30% 72%);
+  white-space: pre-wrap; word-break: break-word;
+  margin: 0; background: transparent; border: none; padding: 0;
+}
+
+.s3-step-pause.active {
+  background: hsl(222 28% 11%);
+  border: 1px solid hsl(40 50% 30% / 0.5);
+  animation: s3StepPausePulse 1.8s ease-in-out infinite;
+}
+.s3-step-pause.active .n { color: var(--gold); }
+@keyframes s3StepPausePulse {
+  0%, 100% { border-color: hsl(40 50% 30% / 0.5); box-shadow: none; }
+  50%      { border-color: hsl(40 70% 53% / 0.4); box-shadow: 0 0 8px hsl(40 70% 53% / 0.12); }
+}
+
+@keyframes s3ReasoningHalo {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(40 70% 53% / 0); }
+  50%      { box-shadow: 0 0 0 8px hsl(40 70% 53% / 0.15); }
+}
+.s3-avatar-reasoning { animation: s3ReasoningHalo 1.4s ease-in-out infinite; }
+
+.s3-arrows-layer {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 2; overflow: visible;
+}
+.s3-arrow {
+  stroke: var(--gold); stroke-width: 1.5; fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 200; stroke-dashoffset: 200;
+  opacity: 0;
+  transition: stroke-dashoffset 500ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+}
+.s3-arrow.s3-arrow--active { stroke-dashoffset: 0; opacity: 0.85; }
+
+.s3-exchange-badges { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.s3-exchange-badge {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 1px solid hsl(220 18% 24%);
+  background: hsl(220 22% 9%);
+  padding: 10px 12px;
+  opacity: 0; transform: translateY(8px) scale(0.96);
+}
+.s3-exchange-badge--entering { animation: s3BadgeEnter 600ms cubic-bezier(0.34, 1.4, 0.6, 1) forwards; }
+@keyframes s3BadgeEnter { to { opacity: 1; transform: translateY(0) scale(1); } }
+.s3-badge-svg { width: 52px; height: 52px; flex-shrink: 0; }
+.s3-badge-meta { font-family: var(--mono); font-size: 10px; line-height: 1.6; display: flex; flex-direction: column; gap: 2px; }
+.s3-badge-label { color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; font-weight: 500; }
+.s3-badge-principals { color: hsl(40 25% 65%); }
+.s3-badge-hash { color: hsl(40 15% 55%); font-size: 9.5px; }
+.s3-badge-hash .hash-val { color: hsl(40 30% 65%); }
+.s3-badge-taskid { color: hsl(155 30% 55%); font-size: 9px; letter-spacing: 0.1em; margin-top: 4px; }
+
+.s3-badge-svg .s3-badge-seam {
+  stroke: var(--gold); stroke-width: 1.5;
+  stroke-dasharray: 60; stroke-dashoffset: 60;
+  filter: drop-shadow(0 0 4px hsl(40 70% 55% / 0.5));
+}
+.s3-badge-svg--seam-active .s3-badge-seam {
+  transition: stroke-dashoffset 700ms ease 400ms;
+  stroke-dashoffset: 0;
+}
+
+.s3-payload-panel {
+  font-family: var(--mono); font-size: 11px; color: hsl(40 25% 65%);
+  display: flex; flex-direction: column; gap: 3px; padding: 8px 0;
+}
+.s3-pp-row { display: flex; gap: 12px; justify-content: space-between; }
+.s3-pp-k { color: hsl(40 20% 55%); }
+.s3-pp-v { color: hsl(40 35% 70%); text-align: right; }
+.s3-pp-blocked .s3-pp-k { color: hsl(13 40% 50%); }
+.s3-pp-blocked .s3-pp-v { color: hsl(13 40% 50%); }
+.s3-pp-pending { color: hsl(40 15% 45%); font-style: italic; }
+.s3-pp-hash { font-size: 9.5px; color: hsl(40 15% 45%); margin-top: 4px; letter-spacing: 0.04em; }
+.s3-pp-hash.s3-pp-hash--real { color: var(--jade); }
+
+.s3-slot-moving-out {
+  transition: opacity 400ms ease, background 400ms ease;
+  opacity: 0.15; background: hsl(13 30% 16%);
+}
+.s3-slot-moving-out .title { text-decoration: line-through; }
+.s3-slot-moving-out .time { color: hsl(13 40% 45%); }
+
+.s3-slot-appearing { opacity: 0; transition: opacity 500ms ease; }
+.s3-slot-appeared { opacity: 1; border-left: 3px solid var(--jade); }
+
+.s3-task-id-bar {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: hsl(40 25% 55%);
+  background: hsl(220 22% 6%);
+  border: 1px solid hsl(220 18% 18%);
+  border-top: none;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-height: 36px;
+}
+.s3-taskid-placeholder { color: hsl(40 20% 45%); font-style: italic; }
+.s3-taskid-group { display: inline-flex; align-items: baseline; gap: 6px; }
+.s3-taskid-exlabels { color: hsl(40 20% 50%); }
+.s3-taskid-key { color: hsl(40 50% 65%); }
+.s3-taskid-val { color: var(--gold); }
+.s3-taskid-sep { color: hsl(40 15% 35%); }
+
+.s3-ledger-block {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.s3-abort-banner {
+  border: 1px solid var(--terracotta-deep);
+  background: hsl(13 40% 10%);
+  color: hsl(13 50% 70%);
+  font-family: var(--mono); font-size: 12px;
+  padding: 20px 24px; margin-top: 24px;
+  position: relative;
+}
+.s3-abort-banner::before {
+  content: "CASCADE ABORTED";
+  display: block; font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--terracotta); margin-bottom: 10px;
+}
+.s3-abort-banner .s3-abort-reason { line-height: 1.65; color: hsl(13 45% 65%); }
+
+@media (max-width: 1080px) {
+  #s2-stage { grid-template-columns: 1fr; }
+  #s2-panel-marius, #s2-panel-wren, #s2-panel-atlas,
+  #s2-panel-exchange-log, #s2-panel-funnel {
+    border-left: none; border-right: none;
+    border-bottom: 1px solid hsl(220 18% 22%);
+  }
+  .s2-receipt-head, .s2-receipt-row {
+    grid-template-columns: 40px 90px 60px 1fr 1fr 60px;
+    font-size: 10px;
+  }
+  .s3-stage { grid-template-columns: 1fr; }
+  .s3-ledger-block { grid-template-columns: 1fr; }
+  .party.center { border: none; border-bottom: 1px solid hsl(220 18% 22%); }
+  .s3-exchange-badges { flex-direction: column; }
+  .s3-arrows-layer { display: none; }
+}
+
 </style>
 </head>
 <body>
@@ -1180,6 +1642,8 @@ button[disabled], .btn[disabled] {
         <span class="status">upcoming · agent reasoning needed</span>
       </button>
     </div>
+
+    <div data-scenario-content="1" id="scenario-1-content">
 
     <div class="stage" id="stage">
 
@@ -1349,6 +1813,472 @@ button[disabled], .btn[disabled] {
         </div>
       </div>
     </div>
+
+    </div><!-- /scenario-1-content -->
+
+    <!-- SCENARIO 2 — four-party group find -->
+    <div data-scenario-content="2" id="scenario-2-content" aria-hidden="true" style="display:none">
+
+      <div class="stage" id="s2-stage">
+
+        <!-- summary tessera-fit overlay -->
+        <div class="tessera-fit-overlay" id="s2-tessera-fit">
+          <div class="glyph">
+            <svg class="tessera-half-l" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <radialGradient id="s2-halfL" cx="60%" cy="35%" r="90%">
+                  <stop offset="0%" stop-color="#e0d4bf"/>
+                  <stop offset="100%" stop-color="#8a7456"/>
+                </radialGradient>
+              </defs>
+              <path d="M 200 0 L 200 280 L 100 280 C 60 268, 30 230, 16 168 C 20 110, 50 56, 96 24 C 130 4, 170 0, 200 0 Z" fill="url(#s2-halfL)"/>
+            </svg>
+            <svg class="tessera-half-r" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <radialGradient id="s2-halfR" cx="40%" cy="60%" r="90%">
+                  <stop offset="0%" stop-color="#d4a991"/>
+                  <stop offset="100%" stop-color="#6e4733"/>
+                </radialGradient>
+              </defs>
+              <path d="M 0 0 L 0 280 L 100 280 C 140 268, 170 230, 184 168 C 180 110, 150 56, 104 24 C 70 4, 30 0, 0 0 Z" fill="url(#s2-halfR)"/>
+            </svg>
+            <div class="tessera-seam"></div>
+          </div>
+          <div class="verdict">6 fits  ·  all matched</div>
+        </div>
+
+        <!-- Row 1, col 1: Marius -->
+        <div class="party" id="s2-panel-marius">
+          <div class="who">
+            <div class="avatar s2-avatar-marius">M</div>
+            <div>
+              <div class="name">Marius</div>
+              <div class="id">marius@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">marius' calendar — tue may 26</div>
+          <div class="calendar">
+            <div class="event"><span class="time">tue 10:00</span>
+              <div><div class="title">Print proof review</div><div class="attendees">solo · 90 min</div></div>
+            </div>
+            <div class="event free" data-slot="s2-marius-tue-1300"><span class="time">tue 13:00</span>
+              <div><div class="title">— free —</div><div class="attendees">match · 30 min</div></div>
+            </div>
+            <div class="event"><span class="time">tue 15:30</span>
+              <div><div class="title">Studio hours</div><div class="attendees">solo</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 1, col 2: Iris (center hub) -->
+        <div class="party" id="s2-panel-iris">
+          <div class="who">
+            <div class="avatar">I</div>
+            <div>
+              <div class="name">Iris <span style="font-family:var(--mono);font-size:10px;letter-spacing:0.14em;color:hsl(40 25% 60%);">· convenor</span></div>
+              <div class="id">iris@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">iris' calendar — tue may 26</div>
+          <div class="calendar">
+            <div class="event"><span class="time">tue 09:00</span>
+              <div><div class="title">Atelier critique</div><div class="attendees">3 attendees</div></div>
+            </div>
+            <div class="event free" data-slot="s2-iris-tue-1300"><span class="time">tue 13:00</span>
+              <div><div class="title">— free —</div><div class="attendees">candidate · 30 min</div></div>
+            </div>
+            <div class="event free"><span class="time">tue 15:30</span>
+              <div><div class="title">— free —</div><div class="attendees">candidate · 30 min</div></div>
+            </div>
+          </div>
+          <div class="panel-label">iris' candidate slots (outbound, scoped)</div>
+          <div style="font-family:var(--mono);font-size:11px;color:hsl(40 25% 70%);padding:8px 0;">
+            <div>tue 13:00 · 30 min</div>
+            <div>tue 15:30 · 30 min</div>
+            <div>wed 11:30 · 30 min</div>
+          </div>
+        </div>
+
+        <!-- Row 1, col 3: Wren -->
+        <div class="party" id="s2-panel-wren">
+          <div class="who">
+            <div class="avatar s2-avatar-wren">W</div>
+            <div>
+              <div class="name">Wren</div>
+              <div class="id">wren@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">wren's calendar — tue may 26</div>
+          <div class="calendar">
+            <div class="event"><span class="time">tue 08:30</span>
+              <div><div class="title">Morning sync</div><div class="attendees">team</div></div>
+            </div>
+            <div class="event free" data-slot="s2-wren-tue-1300"><span class="time">tue 13:00</span>
+              <div><div class="title">— free —</div><div class="attendees">match · 30 min</div></div>
+            </div>
+            <div class="event free"><span class="time">tue 15:30</span>
+              <div><div class="title">— free —</div><div class="attendees">match · 30 min</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2, col 1: Exchange log -->
+        <div id="s2-panel-exchange-log">
+          <div class="s2-exchange-log">
+            <div class="s2-exchange-log-head">bilateral exchanges</div>
+            <div class="s2-exchange-log-entry" id="s2-log-A1"><span class="s2-log-id">A1</span>queued · query → marius</div>
+            <div class="s2-exchange-log-entry" id="s2-log-A2"><span class="s2-log-id">A2</span>queued · query → wren</div>
+            <div class="s2-exchange-log-entry" id="s2-log-A3"><span class="s2-log-id">A3</span>queued · query → atlas</div>
+            <div class="s2-exchange-log-entry" id="s2-log-B1"><span class="s2-log-id">B1</span>pending · confirm → marius</div>
+            <div class="s2-exchange-log-entry" id="s2-log-B2"><span class="s2-log-id">B2</span>pending · confirm → wren</div>
+            <div class="s2-exchange-log-entry" id="s2-log-B3"><span class="s2-log-id">B3</span>pending · confirm → atlas</div>
+          </div>
+        </div>
+
+        <!-- Row 2, col 2: Atlas -->
+        <div class="party" id="s2-panel-atlas">
+          <div class="who">
+            <div class="avatar s2-avatar-atlas">A</div>
+            <div>
+              <div class="name">Atlas</div>
+              <div class="id">atlas@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">atlas' calendar — tue may 26</div>
+          <div class="calendar">
+            <div class="event free" data-slot="s2-atlas-tue-1300"><span class="time">tue 13:00</span>
+              <div><div class="title">— free —</div><div class="attendees">match · 30 min</div></div>
+            </div>
+            <div class="event"><span class="time">tue 15:30</span>
+              <div><div class="title">Field notes review</div><div class="attendees">solo</div></div>
+            </div>
+            <div class="event"><span class="time">wed 10:00</span>
+              <div><div class="title">Glassworks site visit</div><div class="attendees">marius</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2, col 3: Funnel -->
+        <div id="s2-panel-funnel">
+          <div class="panel-label" style="margin-top:0;border-top:none;padding-top:0;">intersection funnel</div>
+          <div id="s2-funnel">
+            <div class="s2-funnel-col" id="s2-funnel-col1">
+              <div class="s2-funnel-col-head">iris proposes</div>
+              <div class="s2-slot-chip" data-slot-id="2026-05-26T13:00:00Z">tue 13:00</div>
+              <div class="s2-slot-chip" data-slot-id="2026-05-26T15:30:00Z">tue 15:30</div>
+              <div class="s2-slot-chip" data-slot-id="2026-05-27T11:30:00Z">wed 11:30</div>
+            </div>
+            <div class="s2-funnel-col" id="s2-funnel-col2">
+              <div class="s2-funnel-col-head">per peer response</div>
+              <div class="s2-funnel-peer-group" data-peer="marius">
+                <div class="s2-funnel-peer-initial">M</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-26T13:00:00Z">tue 13:00</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-26T15:30:00Z">tue 15:30</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-27T11:30:00Z">wed 11:30</div>
+              </div>
+              <div class="s2-funnel-peer-group" data-peer="wren">
+                <div class="s2-funnel-peer-initial">W</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-26T13:00:00Z">tue 13:00</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-26T15:30:00Z">tue 15:30</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-27T11:30:00Z">wed 11:30</div>
+              </div>
+              <div class="s2-funnel-peer-group" data-peer="atlas">
+                <div class="s2-funnel-peer-initial">A</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-26T13:00:00Z">tue 13:00</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-26T15:30:00Z">tue 15:30</div>
+                <div class="s2-slot-chip" data-slot-id="2026-05-27T11:30:00Z">wed 11:30</div>
+              </div>
+            </div>
+            <div class="s2-funnel-col" id="s2-funnel-col3">
+              <div class="s2-funnel-col-head">chosen slot</div>
+              <div class="s2-slot-chip" id="s2-chosen-chip">— awaiting —</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="step-indicator" id="s2-step-indicator">
+        <div class="step" data-step="1"><span class="n">i.</span> Build &amp; send A1 → Marius</div>
+        <div class="step" data-step="2"><span class="n">ii.</span> Build &amp; send A2 → Wren</div>
+        <div class="step" data-step="3"><span class="n">iii.</span> Build &amp; send A3 → Atlas</div>
+        <div class="step" data-step="4"><span class="n">iv.</span> Compute intersection (local)</div>
+        <div class="step" data-step="5"><span class="n">v.</span> Confirm B1 → Marius</div>
+        <div class="step" data-step="6"><span class="n">vi.</span> Confirm B2 → Wren</div>
+        <div class="step" data-step="7"><span class="n">vii.</span> Confirm B3 → Atlas</div>
+        <div class="step" data-step="8"><span class="n">viii.</span> Tessera fit · six receipts</div>
+        <div class="step" data-step="9"><span class="n">ix.</span> Meeting Object · four calendars</div>
+      </div>
+
+      <div class="run-controls" id="s2-run-controls-row">
+        <button id="s2-runBtn">Find group slot</button>
+        <button id="s2-resetBtn" class="ghost">Reset</button>
+        <div class="status" id="s2-run-status">ready — press to begin</div>
+      </div>
+
+      <div id="s2-failure-banner">
+        <span>○ no common slot found</span> · <span id="s2-failure-detail">3 query exchanges ran · 0 confirm exchanges</span>
+      </div>
+
+      <div class="s2-receipt-table" id="s2-receipt-table">
+        <div class="s2-receipt-head">
+          <span>ID</span><span>Peer</span><span>Phase</span><span>Iris hash</span><span>Peer hash</span><span>Status</span>
+        </div>
+        <div class="s2-receipt-row" id="s2-row-A1" data-exchange-id="A1">
+          <span class="s2-exid">A1</span>
+          <span class="s2-peer">—</span>
+          <span class="s2-phase-badge">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-verified"></span>
+        </div>
+        <div class="s2-receipt-row" id="s2-row-A2" data-exchange-id="A2">
+          <span class="s2-exid">A2</span>
+          <span class="s2-peer">—</span>
+          <span class="s2-phase-badge">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-verified"></span>
+        </div>
+        <div class="s2-receipt-row" id="s2-row-A3" data-exchange-id="A3">
+          <span class="s2-exid">A3</span>
+          <span class="s2-peer">—</span>
+          <span class="s2-phase-badge">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-verified"></span>
+        </div>
+        <div class="s2-receipt-row" id="s2-row-B1" data-exchange-id="B1">
+          <span class="s2-exid">B1</span>
+          <span class="s2-peer">—</span>
+          <span class="s2-phase-badge">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-verified"></span>
+        </div>
+        <div class="s2-receipt-row" id="s2-row-B2" data-exchange-id="B2">
+          <span class="s2-exid">B2</span>
+          <span class="s2-peer">—</span>
+          <span class="s2-phase-badge">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-verified"></span>
+        </div>
+        <div class="s2-receipt-row" id="s2-row-B3" data-exchange-id="B3">
+          <span class="s2-exid">B3</span>
+          <span class="s2-peer">—</span>
+          <span class="s2-phase-badge">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-hash" title="">—</span>
+          <span class="s2-verified"></span>
+        </div>
+      </div>
+
+      <div class="ledger-block">
+        <div class="ledger" id="s2-ledger-iris">
+          <div class="ledger-head">
+            <div class="who">Iris' book</div>
+            <div class="label">all 6 bilateral entries</div>
+          </div>
+          <div class="ledger-body" id="s2-ledger-body-iris"></div>
+        </div>
+        <div class="ledger" id="s2-ledger-peers">
+          <div class="ledger-head">
+            <div class="who">Peers' books</div>
+            <div class="label">marius · wren · atlas · combined</div>
+          </div>
+          <div class="ledger-body" id="s2-ledger-body-peers"></div>
+        </div>
+      </div>
+
+    </div><!-- /scenario-2-content -->
+
+    <!-- SCENARIO 3 — cascading reschedule -->
+    <div data-scenario-content="3" id="scenario-3-content" aria-hidden="true" style="display:none">
+
+      <div class="stage s3-stage" id="s3-stage">
+
+        <!-- final tessera overlay -->
+        <div class="tessera-fit-overlay" id="s3-tesseraFit">
+          <div class="glyph">
+            <svg class="tessera-half-l" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <radialGradient id="s3-halfL" cx="60%" cy="35%" r="90%">
+                  <stop offset="0%" stop-color="#e0d4bf"/>
+                  <stop offset="100%" stop-color="#8a7456"/>
+                </radialGradient>
+              </defs>
+              <path d="M 200 0 L 200 280 L 100 280 C 60 268, 30 230, 16 168 C 20 110, 50 56, 96 24 C 130 4, 170 0, 200 0 Z" fill="url(#s3-halfL)"/>
+            </svg>
+            <svg class="tessera-half-r" viewBox="0 0 200 280" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <radialGradient id="s3-halfR" cx="40%" cy="60%" r="90%">
+                  <stop offset="0%" stop-color="#d4a991"/>
+                  <stop offset="100%" stop-color="#6e4733"/>
+                </radialGradient>
+              </defs>
+              <path d="M 0 0 L 0 280 L 100 280 C 140 268, 170 230, 184 168 C 180 110, 150 56, 104 24 C 70 4, 30 0, 0 0 Z" fill="url(#s3-halfR)"/>
+            </svg>
+            <div class="tessera-seam"></div>
+          </div>
+          <div class="verdict" id="s3-tesseraFit-verdict">three fits  ·  cascade complete  ·  trust verified</div>
+        </div>
+
+        <!-- IRIS -->
+        <div class="party left">
+          <div class="who">
+            <div class="avatar">I</div>
+            <div>
+              <div class="name">Iris</div>
+              <div class="id">iris@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">iris' calendar — june 2</div>
+          <div class="calendar" id="s3-cal-iris">
+            <div class="event"><span class="time">09:00</span><div><div class="title">synthetic-morning-standup</div><div class="attendees">60 min · solo</div></div></div>
+            <div class="event"><span class="time">11:00</span><div><div class="title">synthetic-focus-block</div><div class="attendees">30 min · solo</div></div></div>
+          </div>
+          <div class="panel-label">iris' scoped proposal — outbound</div>
+          <div class="s3-payload-panel" id="s3-payload-iris">
+            <div class="s3-pp-row"><span class="s3-pp-k">candidates</span><span class="s3-pp-v">["2026-06-02T14:00:00Z"]</span></div>
+            <div class="s3-pp-row"><span class="s3-pp-k">duration_minutes</span><span class="s3-pp-v">30</span></div>
+            <div class="s3-pp-row s3-pp-blocked"><span class="s3-pp-k">calendar_titles</span><span class="s3-pp-v">blocked ✕</span></div>
+            <div class="s3-pp-row s3-pp-blocked"><span class="s3-pp-k">attendee_emails</span><span class="s3-pp-v">blocked ✕</span></div>
+            <div class="s3-pp-row"><span class="s3-pp-k">constraint_hints</span><span class="s3-pp-v">{tz: "Europe/Paris"}</span></div>
+            <div class="s3-pp-hash" id="s3-iris-proposal-hash">— hash pending —</div>
+          </div>
+        </div>
+
+        <!-- flow arrows layer -->
+        <svg class="s3-arrows-layer" id="s3-arrows-layer" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <marker id="s3-arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M 0 0 L 6 3 L 0 6" stroke="hsl(40 70% 53%)" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <!--
+            Arrow x-coordinates span the actual column boundaries of a
+            1fr 1.6fr 1fr grid in a 1000-unit viewBox: Iris/Marius at
+            ≈278, Marius/Atlas at ≈722. Originals (290→440 etc.) sat
+            entirely inside the Marius column and the directional
+            narrative was invisible.
+          -->
+          <path id="s3-arrow-iris-marius" class="s3-arrow" d="M 250 50 L 320 50" marker-end="url(#s3-arrowhead)"/>
+          <path id="s3-arrow-marius-atlas" class="s3-arrow" d="M 690 35 L 760 35" marker-end="url(#s3-arrowhead)"/>
+          <path id="s3-arrow-atlas-marius" class="s3-arrow" d="M 760 55 L 690 55" marker-end="url(#s3-arrowhead)"/>
+          <path id="s3-arrow-marius-iris" class="s3-arrow" d="M 320 65 L 250 65" marker-end="url(#s3-arrowhead)"/>
+        </svg>
+
+        <!-- MARIUS -->
+        <div class="party center">
+          <div class="who">
+            <div class="avatar s3-avatar-marius" id="s3-avatar-marius">M</div>
+            <div>
+              <div class="name">Marius</div>
+              <div class="id">marius@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">marius' calendar — june 2</div>
+          <div class="calendar" id="s3-cal-marius">
+            <div class="event"><span class="time">10:00</span><div><div class="title">synthetic-weekly-review</div><div class="attendees">60 min · solo</div></div></div>
+            <div class="event s3-blocking" data-slot="s3-marius-1400"><span class="time">14:00</span><div><div class="title">synthetic-project-sync</div><div class="attendees">45 min · atlas</div></div></div>
+            <div class="event"><span class="time">15:30</span><div><div class="title">synthetic-1-on-1</div><div class="attendees">30 min · solo</div></div></div>
+          </div>
+
+          <div class="panel-label s3-reasoning-label" id="s3-reasoning-label">marius' agent — awaiting proposal</div>
+
+          <div id="s3-reasoning-trace" class="s3-reasoning-trace" aria-live="polite">
+            <div class="s3-trace-header">
+              <span class="s3-trace-eyebrow">agent reasoning…</span>
+              <span class="s3-trace-spinner s3-trace-spinner--active" id="s3-trace-spinner"></span>
+            </div>
+            <div class="s3-trace-fields" id="s3-trace-fields"></div>
+            <div class="s3-trace-reason-label">reason</div>
+            <pre class="s3-trace-reason" id="s3-trace-reason">— awaiting —</pre>
+          </div>
+
+          <div class="panel-label">signed exchanges</div>
+          <div id="s3-exchange-badges" class="s3-exchange-badges"></div>
+
+          <div class="panel-label">marius' reschedule proposal to atlas</div>
+          <div class="s3-payload-panel" id="s3-payload-marius">
+            <div class="s3-pp-row s3-pp-pending" id="s3-marius-proposal-pending">— pending reasoning —</div>
+          </div>
+        </div>
+
+        <!-- ATLAS -->
+        <div class="party right">
+          <div class="who">
+            <div class="avatar s3-avatar-atlas">A</div>
+            <div>
+              <div class="name">Atlas</div>
+              <div class="id">atlas@meshycal.demo</div>
+            </div>
+          </div>
+          <div class="panel-label">atlas' calendar — june 2</div>
+          <div class="calendar" id="s3-cal-atlas">
+            <div class="event free s3-cal-atlas-empty">
+              <span class="time">—</span>
+              <div>
+                <div class="title">no events yet</div>
+                <div class="attendees">atlas' internal calendar not modeled in v0</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-label">what atlas receives</div>
+          <div class="s3-payload-panel" id="s3-payload-atlas"><div class="s3-pp-pending">— pending cascade —</div></div>
+          <div class="panel-label">atlas' acceptance</div>
+          <div class="s3-payload-panel" id="s3-payload-atlas-acceptance"><div class="s3-pp-pending">— pending —</div></div>
+        </div>
+
+      </div>
+
+      <div class="s3-task-id-bar" id="s3-task-id-bar">
+        <span class="s3-taskid-placeholder" id="s3-taskid-placeholder">task IDs will appear when the cascade completes</span>
+      </div>
+
+      <div class="step-indicator" id="s3-stepIndicator">
+        <div class="step" data-step="1"><span class="n">i.</span> Iris builds proposal</div>
+        <div class="step" data-step="2"><span class="n">ii.</span> Iris→Marius scoped</div>
+        <div class="step s3-step-pause" data-step="3"><span class="n">iii.</span> Agent reasoning…</div>
+        <div class="step" data-step="4"><span class="n">iv.</span> Marius→Atlas</div>
+        <div class="step" data-step="5"><span class="n">v.</span> Atlas accepts · B sealed</div>
+        <div class="step" data-step="6"><span class="n">vi.</span> Marius→Iris acceptance</div>
+        <div class="step" data-step="7"><span class="n">vii.</span> Three fits · receipts</div>
+        <div class="step" data-step="8"><span class="n">viii.</span> Calendars updated</div>
+      </div>
+
+      <div class="run-controls">
+        <button id="s3-runBtn">Request meeting</button>
+        <button id="s3-resetBtn" class="ghost">Reset</button>
+        <div class="status" id="s3-runStatus">ready — press to begin</div>
+      </div>
+
+      <div class="s3-ledger-block">
+        <div class="ledger" id="s3-ledgerIris">
+          <div class="ledger-head">
+            <div class="who">Iris' book</div>
+            <div class="label">ledger_owner: iris@meshycal.demo</div>
+          </div>
+          <div class="ledger-body" id="s3-ledgerBodyIris"></div>
+        </div>
+        <div class="ledger" id="s3-ledgerMarius">
+          <div class="ledger-head">
+            <div class="who">Marius' book</div>
+            <div class="label">ledger_owner: marius@meshycal.demo</div>
+          </div>
+          <div class="ledger-body" id="s3-ledgerBodyMarius"></div>
+        </div>
+        <div class="ledger" id="s3-ledgerAtlas">
+          <div class="ledger-head">
+            <div class="who">Atlas' book</div>
+            <div class="label">ledger_owner: atlas@meshycal.demo</div>
+          </div>
+          <div class="ledger-body" id="s3-ledgerBodyAtlas"></div>
+        </div>
+      </div>
+
+    </div><!-- /scenario-3-content -->
 
   </div>
 </section>
@@ -1913,6 +2843,906 @@ button[disabled], .btn[disabled] {
     if (attendeesEl) attendeesEl.textContent = attendees;
   }
 
+  /* =====================================================================
+   * SCENARIO 2 — four-party group find
+   * ===================================================================== */
+
+  const s2RunBtn     = $("s2-runBtn");
+  const s2ResetBtn   = $("s2-resetBtn");
+  const s2RunStatus  = $("s2-run-status");
+  const s2StepInd    = $("s2-step-indicator");
+  const s2TesseraFit = $("s2-tessera-fit");
+  const s2LedgerIris = $("s2-ledger-body-iris");
+  const s2LedgerPeers = $("s2-ledger-body-peers");
+  const s2FailureBanner = $("s2-failure-banner");
+  const s2FailureDetail = $("s2-failure-detail");
+  const s2ChosenChip = $("s2-chosen-chip");
+
+  let lastReal4 = null;
+
+  const S2_PEERS = ["marius", "wren", "atlas"];
+  const S2_PEER_FULL = {
+    marius: "marius@meshycal.demo",
+    wren:   "wren@meshycal.demo",
+    atlas:  "atlas@meshycal.demo",
+  };
+
+  async function fetchFourParty() {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch(API_BASE + "/scenarios/four-party/run", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "content-type": "application/json" },
+      });
+      clearTimeout(t);
+      if (!res.ok) throw new Error("non-2xx from /scenarios/four-party/run");
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function s2FormatSlot(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const day = days[d.getUTCDay()];
+    const hh = String(d.getUTCHours()).padStart(2, "0");
+    const mm = String(d.getUTCMinutes()).padStart(2, "0");
+    return day + " " + hh + ":" + mm;
+  }
+
+  function setStep2(n) {
+    s2StepInd.querySelectorAll(".step").forEach((el) => {
+      const s = parseInt(el.dataset.step, 10);
+      el.classList.toggle("active", s === n);
+      el.classList.toggle("done", s < n);
+    });
+  }
+
+  function s2SetStatus(msg) { s2RunStatus.textContent = msg; }
+
+  function s2PopulateReceiptRow(exchangeId, { peer, phase, irisHash, peerHash }) {
+    const row = document.getElementById("s2-row-" + exchangeId);
+    if (!row) return;
+    const peerShort = (peer || "").split("@")[0] || "—";
+    row.querySelector(".s2-peer").textContent = peerShort;
+    const badge = row.querySelector(".s2-phase-badge");
+    badge.textContent = phase;
+    badge.classList.remove("query", "confirm");
+    if (phase === "query" || phase === "confirm") badge.classList.add(phase);
+    const hashes = row.querySelectorAll(".s2-hash");
+    const ih = String(irisHash || "");
+    const ph = String(peerHash || "");
+    hashes[0].textContent = ih ? ih.slice(0, 16) + "…" : "—";
+    hashes[0].title = ih;
+    hashes[1].textContent = ph ? ph.slice(0, 16) + "…" : "—";
+    hashes[1].title = ph;
+    // Tessera-fit invariant: the "verified" badge must only show when
+    // Iris's hash equals the peer's hash for that bilateral. In real
+    // backend mode the hashes come from independent ledger entries and
+    // must agree for the receipt to be trustworthy. In animation mode
+    // s2FakeHashForPair returns the same hash for both halves, so this
+    // path is a no-op for the happy demo and a real check for live data.
+    const verified = !!ih && !!ph && ih === ph;
+    const badgeEl = row.querySelector(".s2-verified");
+    badgeEl.textContent = verified ? "✓ verified" : "✕ mismatch";
+    badgeEl.style.color = verified ? "" : "var(--terracotta)";
+    row.classList.add("s2-populated");
+  }
+
+  function s2LogEntry(exchangeId, text) {
+    const el = document.getElementById("s2-log-" + exchangeId);
+    if (!el) return;
+    clearChildren(el);
+    const id = elem("span", { className: "s2-log-id", text: exchangeId });
+    el.appendChild(id);
+    el.appendChild(document.createTextNode(text));
+  }
+
+  function s2MarkPeerChips(peerKey, availableSlots) {
+    const group = document.querySelector('.s2-funnel-peer-group[data-peer="' + peerKey + '"]');
+    if (!group) return;
+    const avail = new Set(availableSlots || []);
+    group.querySelectorAll(".s2-slot-chip").forEach((chip) => {
+      const sid = chip.dataset.slotId;
+      if (!avail.has(sid)) chip.classList.add("eliminated");
+    });
+  }
+
+  function s2EliminateCol1(afterAtlas) {
+    const surviving = new Set(afterAtlas || []);
+    document.querySelectorAll("#s2-funnel-col1 .s2-slot-chip").forEach((chip) => {
+      if (!surviving.has(chip.dataset.slotId)) chip.classList.add("eliminated");
+    });
+  }
+
+  function s2ResetFunnel() {
+    document.querySelectorAll("#s2-funnel .s2-slot-chip").forEach((chip) => {
+      chip.classList.remove("eliminated", "chosen", "s2-no-overlap");
+    });
+    s2ChosenChip.textContent = "— awaiting —";
+    s2ChosenChip.classList.remove("chosen", "s2-no-overlap");
+  }
+
+  function s2ClearReceiptRows() {
+    ["A1", "A2", "A3", "B1", "B2", "B3"].forEach((id) => {
+      const row = document.getElementById("s2-row-" + id);
+      if (!row) return;
+      row.classList.remove("s2-populated");
+      row.querySelector(".s2-peer").textContent = "—";
+      const badge = row.querySelector(".s2-phase-badge");
+      badge.textContent = "—";
+      badge.classList.remove("query", "confirm");
+      row.querySelectorAll(".s2-hash").forEach((h) => { h.textContent = "—"; h.title = ""; });
+      row.querySelector(".s2-verified").textContent = "";
+    });
+  }
+
+  function s2ResetExchangeLog() {
+    s2LogEntry("A1", "queued · query → marius");
+    s2LogEntry("A2", "queued · query → wren");
+    s2LogEntry("A3", "queued · query → atlas");
+    s2LogEntry("B1", "pending · confirm → marius");
+    s2LogEntry("B2", "pending · confirm → wren");
+    s2LogEntry("B3", "pending · confirm → atlas");
+  }
+
+  function s2Reset() {
+    setStep2(0);
+    s2SetStatus("ready — press to begin");
+    s2RunBtn.disabled = false;
+    s2RunBtn.textContent = "Find group slot";
+
+    s2ResetFunnel();
+    s2ClearReceiptRows();
+    s2ResetExchangeLog();
+
+    s2FailureBanner.classList.remove("s2-visible");
+
+    setLedgerEmpty(s2LedgerIris,  "— no entries yet — press Find group slot to begin —");
+    setLedgerEmpty(s2LedgerPeers, "— no entries yet —");
+
+    s2TesseraFit.classList.remove("active");
+
+    unbookSlot("s2-iris-tue-1300",   { title: "— free —", attendees: "candidate · 30 min" });
+    unbookSlot("s2-marius-tue-1300", { title: "— free —", attendees: "match · 30 min" });
+    unbookSlot("s2-wren-tue-1300",   { title: "— free —", attendees: "match · 30 min" });
+    unbookSlot("s2-atlas-tue-1300",  { title: "— free —", attendees: "match · 30 min" });
+
+    lastReal4 = null;
+  }
+
+  function s2FakeHashForPair(exId) {
+    // Stable per-exchange-id pseudo-hash so iris/peer halves match within
+    // one bilateral in animation mode.
+    const seed = exId.charCodeAt(0) * 17 + exId.charCodeAt(1) * 31;
+    return fakeHash(seed);
+  }
+
+  async function runScenario2() {
+    s2RunBtn.disabled = true;
+    s2RunBtn.textContent = "Running…";
+
+    // Wrap the entire run in try/catch/finally so any unhandled exception
+    // (sleep abort, DOM call failure, promise rejection that bypasses the
+    // inline .catch below) cannot leave s2RunBtn permanently disabled.
+    // Without this guard the button is "bricked" on error until page reload.
+    try {
+
+    let backendPromise = null;
+    if (backendOk) {
+      backendPromise = fetchFourParty().catch((err) => {
+        console.warn("[meshycal] s2 backend call failed; falling back:", err);
+        return null;
+      });
+    }
+
+    // Phase A — three queries, one per peer.
+    const phaseA = [
+      { id: "A1", peerKey: "marius", stepN: 1 },
+      { id: "A2", peerKey: "wren",   stepN: 2 },
+      { id: "A3", peerKey: "atlas",  stepN: 3 },
+    ];
+
+    for (const { id, peerKey, stepN } of phaseA) {
+      setStep2(stepN);
+      s2SetStatus(id + " · Iris → " + peerKey + " · query");
+      s2LogEntry(id, "in flight · query → " + peerKey);
+      await sleep(900);
+    }
+
+    // Await backend.
+    if (backendPromise) {
+      lastReal4 = await backendPromise;
+    }
+
+    // Populate A1/A2/A3 receipt rows and mark per-peer chips.
+    for (const { id, peerKey } of phaseA) {
+      let irisHash, peerHash, peerAvail;
+      if (lastReal4 && lastReal4.exchanges) {
+        const ex = lastReal4.exchanges.find((e) => e.exchange_id === id);
+        if (ex) {
+          irisHash = ex.iris_payload_hash;
+          peerHash = ex.peer_payload_hash;
+          peerAvail = (ex.peer_response_payload && ex.peer_response_payload.candidates) || [];
+        }
+      }
+      if (!irisHash) {
+        const h = s2FakeHashForPair(id);
+        irisHash = h;
+        peerHash = h;
+      }
+      if (!peerAvail) {
+        // Animation-mode default: peer is available at the first slot only.
+        peerAvail = ["2026-05-26T13:00:00Z"];
+      }
+      s2PopulateReceiptRow(id, {
+        peer: S2_PEER_FULL[peerKey],
+        phase: "query",
+        irisHash: irisHash,
+        peerHash: peerHash,
+      });
+      s2MarkPeerChips(peerKey, peerAvail);
+      s2LogEntry(id, "complete · query · " + (peerAvail.length) + " slots available");
+    }
+
+    // Step 4 — intersection.
+    setStep2(4);
+    s2SetStatus("step iv — computing intersection locally…");
+    await sleep(800);
+
+    let chosen = null;
+    let afterAtlas = null;
+    let success = true;
+    if (lastReal4) {
+      success = !!lastReal4.success;
+      chosen = lastReal4.chosen_slot || null;
+      afterAtlas = (lastReal4.intersection && lastReal4.intersection.after_atlas) || [];
+    } else {
+      // Animation-mode default: all three peers available at 13:00.
+      afterAtlas = ["2026-05-26T13:00:00Z"];
+      chosen = afterAtlas[0];
+      success = !!chosen;
+    }
+    s2EliminateCol1(afterAtlas);
+    await sleep(400);
+
+    if (!success || !chosen) {
+      s2ChosenChip.textContent = "no overlap";
+      s2ChosenChip.classList.add("s2-no-overlap");
+      s2FailureDetail.textContent = "3 query exchanges ran · 0 confirm exchanges";
+      s2FailureBanner.classList.add("s2-visible");
+      s2SetStatus("no common slot — intersection is empty. 3 exchanges, 0 confirms. press Reset.");
+
+      // Populate Iris and peers ledgers for the query-only run.
+      const irisEntries = (lastReal4 && lastReal4.iris_ledger)
+        ? lastReal4.iris_ledger.map((r) => ({
+            seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation,
+            actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash,
+          }))
+        : [];
+      clearChildren(s2LedgerIris);
+      if (irisEntries.length) {
+        irisEntries.forEach((e) => appendLedgerEntry(s2LedgerIris, e));
+      } else {
+        setLedgerEmpty(s2LedgerIris, "— 3 query receipts not available in animation mode —");
+      }
+      clearChildren(s2LedgerPeers);
+      const peerEntries = [];
+      if (lastReal4) {
+        ["marius_summary", "wren_summary", "atlas_summary"].forEach((k) => {
+          const sum = lastReal4[k];
+          if (sum && sum.all_ledger_entries) peerEntries.push(...sum.all_ledger_entries);
+        });
+        peerEntries.sort((a, b) => a.sequence - b.sequence);
+      }
+      if (peerEntries.length) {
+        peerEntries.forEach((r) => appendLedgerEntry(s2LedgerPeers, {
+          seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation,
+          actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash,
+        }));
+      } else {
+        setLedgerEmpty(s2LedgerPeers, "— no overlap; no confirm exchanges issued —");
+      }
+
+      s2RunBtn.disabled = false;
+      s2RunBtn.textContent = "Run again";
+      return;
+    }
+
+    s2ChosenChip.textContent = s2FormatSlot(chosen);
+    s2ChosenChip.classList.add("chosen");
+    await sleep(500);
+
+    // Phase B — three confirms.
+    const phaseB = [
+      { id: "B1", peerKey: "marius", stepN: 5 },
+      { id: "B2", peerKey: "wren",   stepN: 6 },
+      { id: "B3", peerKey: "atlas",  stepN: 7 },
+    ];
+    for (const { id, peerKey, stepN } of phaseB) {
+      setStep2(stepN);
+      s2SetStatus(id + " · Iris → " + peerKey + " · confirm");
+      s2LogEntry(id, "in flight · confirm → " + peerKey);
+      await sleep(700);
+
+      let irisHash, peerHash;
+      if (lastReal4 && lastReal4.exchanges) {
+        const ex = lastReal4.exchanges.find((e) => e.exchange_id === id);
+        if (ex) {
+          irisHash = ex.iris_payload_hash;
+          peerHash = ex.peer_payload_hash;
+        }
+      }
+      if (!irisHash) {
+        const h = s2FakeHashForPair(id);
+        irisHash = h;
+        peerHash = h;
+      }
+      s2PopulateReceiptRow(id, {
+        peer: S2_PEER_FULL[peerKey],
+        phase: "confirm",
+        irisHash: irisHash,
+        peerHash: peerHash,
+      });
+      s2LogEntry(id, "complete · confirm · sealed");
+      await sleep(400);
+    }
+
+    // Step 8 — tessera fit.
+    setStep2(8);
+    s2SetStatus("step viii — six receipts · tessera fit");
+    s2TesseraFit.classList.add("active");
+    await sleep(2200);
+    s2TesseraFit.classList.remove("active");
+
+    // Step 9 — write the Meeting Object to all four calendars.
+    setStep2(9);
+    s2SetStatus("step ix — writing Meeting Object to all four calendars");
+    bookSlot("s2-iris-tue-1300",   { title: "Meeting with the group", attendees: "marius · wren · atlas · signed" });
+    await sleep(200);
+    bookSlot("s2-marius-tue-1300", { title: "Meeting with the group", attendees: "iris · wren · atlas · signed" });
+    await sleep(200);
+    bookSlot("s2-wren-tue-1300",   { title: "Meeting with the group", attendees: "iris · marius · atlas · signed" });
+    await sleep(200);
+    bookSlot("s2-atlas-tue-1300",  { title: "Meeting with the group", attendees: "iris · marius · wren · signed" });
+    await sleep(800);
+
+    // Populate ledgers.
+    clearChildren(s2LedgerIris);
+    let irisEntries;
+    if (lastReal4 && lastReal4.iris_ledger) {
+      irisEntries = lastReal4.iris_ledger.map((r) => ({
+        seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation,
+        actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash,
+      }));
+    } else {
+      const ts = "2026-05-26T13:00:00Z";
+      irisEntries = [];
+      ["A1","A2","A3","B1","B2","B3"].forEach((exId, idx) => {
+        const h = s2FakeHashForPair(exId);
+        const peerKey = (exId.startsWith("A") ? phaseA : phaseB)[parseInt(exId[1],10) - 1].peerKey;
+        const op = exId.startsWith("A") ? "proposal" : "acceptance";
+        irisEntries.push({
+          seq: idx * 2, ts, action: "emit", op,
+          actor: "iris@meshycal.demo", counterpart: S2_PEER_FULL[peerKey], hash: h,
+        });
+        irisEntries.push({
+          seq: idx * 2 + 1, ts, action: "receive", op,
+          actor: S2_PEER_FULL[peerKey], counterpart: "iris@meshycal.demo", hash: h,
+        });
+      });
+    }
+    irisEntries.forEach((e) => appendLedgerEntry(s2LedgerIris, e));
+
+    clearChildren(s2LedgerPeers);
+    let peerEntries = [];
+    if (lastReal4) {
+      ["marius_summary", "wren_summary", "atlas_summary"].forEach((k) => {
+        const sum = lastReal4[k];
+        if (sum && sum.all_ledger_entries) peerEntries.push(...sum.all_ledger_entries);
+      });
+      peerEntries.sort((a, b) => (a.sequence - b.sequence));
+      peerEntries.forEach((r) => appendLedgerEntry(s2LedgerPeers, {
+        seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation,
+        actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash,
+      }));
+    } else {
+      // Animation-mode mirror of Iris's entries (action flipped per side).
+      irisEntries.forEach((e) => {
+        const flipped = e.action === "emit" ? "receive" : "emit";
+        appendLedgerEntry(s2LedgerPeers, { ...e, action: flipped });
+      });
+    }
+
+    const tail = lastReal4
+      ? "done — real four-party in " + lastReal4.duration_ms + "ms · 6 fits · all books match. press Reset."
+      : "done — 6 fits (animation mode) · all four books match. press Reset.";
+    s2SetStatus(tail);
+
+    s2RunBtn.disabled = false;
+    s2RunBtn.textContent = "Run again";
+
+    } catch (err) {
+      console.error("[s2] runScenario2 failed:", err);
+      s2SetStatus("scenario 2 errored: " + ((err && err.message) || String(err)) + " · press Reset");
+    } finally {
+      s2RunBtn.disabled = false;
+      if (s2RunBtn.textContent === "Running…") s2RunBtn.textContent = "Find group slot";
+    }
+  }
+
+  /* =====================================================================
+   * SCENARIO 3 — cascading reschedule
+   * ===================================================================== */
+
+  const s3RunBtn       = $("s3-runBtn");
+  const s3ResetBtn     = $("s3-resetBtn");
+  const s3RunStatus    = $("s3-runStatus");
+  const s3StepInd      = $("s3-stepIndicator");
+  const s3TesseraFit   = $("s3-tesseraFit");
+  const s3TracePanel   = $("s3-reasoning-trace");
+  const s3TraceFields  = $("s3-trace-fields");
+  const s3TraceReason  = $("s3-trace-reason");
+  const s3TraceSpinner = $("s3-trace-spinner");
+  const s3BadgesEl     = $("s3-exchange-badges");
+  const s3TaskIdBar    = $("s3-task-id-bar");
+  const s3LedgerIris   = $("s3-ledgerBodyIris");
+  const s3LedgerMarius = $("s3-ledgerBodyMarius");
+  const s3LedgerAtlas  = $("s3-ledgerBodyAtlas");
+
+  function s3SetStep(n) {
+    s3StepInd.querySelectorAll(".step").forEach((el) => {
+      const s = parseInt(el.dataset.step, 10);
+      el.classList.toggle("active", s === n);
+      el.classList.toggle("done",   s < n);
+    });
+  }
+  function s3SetStatus(msg) { s3RunStatus.textContent = msg; }
+
+  async function fetchCascading() {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch(API_BASE + "/scenarios/cascading/run", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "content-type": "application/json" },
+      });
+      clearTimeout(t);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw Object.assign(new Error("cascade-failed"), { detail: body.detail || "" });
+      }
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function s3AppendTraceField(key, value, delayMs) {
+    const row = elem("div", { className: "s3-trace-field" });
+    row.appendChild(elem("span", { className: "s3-tf-key", text: key }));
+    row.appendChild(elem("span", { className: "s3-tf-val", text: value }));
+    s3TraceFields.appendChild(row);
+    setTimeout(() => row.classList.add("s3-trace-field--visible"), delayMs);
+  }
+
+  function s3ShowReasoningTrace(trace) {
+    s3TracePanel.classList.add("s3-reasoning-trace--visible");
+    s3AppendTraceField("requested_slot",          trace.requested_slot,          0);
+    s3AppendTraceField("blocking_event_title",    trace.blocking_event_title,    200);
+    s3AppendTraceField("blocking_event_attendee", trace.blocking_event_attendee, 400);
+    s3AppendTraceField("proposed_new_slot",       trace.proposed_new_slot,       600);
+    setTimeout(() => { s3TraceReason.textContent = trace.reason; }, 800);
+  }
+
+  function s3StopReasoningSpinner() {
+    s3TraceSpinner.classList.remove("s3-trace-spinner--active");
+    const eyebrow = s3TracePanel.querySelector(".s3-trace-eyebrow");
+    if (eyebrow) eyebrow.textContent = "agent reasoning — complete";
+    const avatarEl = $("s3-avatar-marius");
+    if (avatarEl) avatarEl.classList.remove("s3-avatar-reasoning");
+  }
+
+  function s3AppendExchangeBadge(label, init, resp, propHash, acptHash, taskIdLabel) {
+    const badge = elem("div", { className: "s3-exchange-badge" });
+    badge.dataset.exchange = label;
+
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 52 72");
+    svg.setAttribute("class", "s3-badge-svg");
+    const pathL = document.createElementNS(ns, "path");
+    pathL.setAttribute("d", "M 26 2 C 22 4, 19 12, 18 22 L 18 36 L 16 44 L 19 52 L 17 60 L 18 68 L 26 70 L 26 2 Z");
+    pathL.setAttribute("fill", "#c8b89d");
+    const pathR = document.createElementNS(ns, "path");
+    pathR.setAttribute("d", "M 26 2 L 26 70 L 34 68 L 35 60 L 33 52 L 36 44 L 34 36 L 34 22 C 33 12, 30 4, 26 2 Z");
+    pathR.setAttribute("fill", "#b88467");
+    const seam = document.createElementNS(ns, "line");
+    seam.setAttribute("x1", "26"); seam.setAttribute("y1", "8");
+    seam.setAttribute("x2", "26"); seam.setAttribute("y2", "64");
+    seam.setAttribute("class", "s3-badge-seam");
+    svg.appendChild(pathL); svg.appendChild(pathR); svg.appendChild(seam);
+
+    const meta = elem("div", { className: "s3-badge-meta" });
+    meta.appendChild(elem("div", { className: "s3-badge-label", text: "Exchange " + label }));
+    meta.appendChild(elem("div", { className: "s3-badge-principals", text: init + " · " + resp }));
+
+    const ph = elem("div", { className: "s3-badge-hash" });
+    ph.appendChild(document.createTextNode("prop: "));
+    ph.appendChild(elem("span", { className: "hash-val", text: String(propHash).slice(0, 12) + "…" }));
+    meta.appendChild(ph);
+
+    const ah = elem("div", { className: "s3-badge-hash" });
+    ah.appendChild(document.createTextNode("acpt: "));
+    ah.appendChild(elem("span", { className: "hash-val", text: String(acptHash).slice(0, 12) + "…" }));
+    meta.appendChild(ah);
+
+    meta.appendChild(elem("div", { className: "s3-badge-taskid", text: taskIdLabel }));
+
+    badge.appendChild(svg);
+    badge.appendChild(meta);
+    s3BadgesEl.appendChild(badge);
+
+    requestAnimationFrame(() => badge.classList.add("s3-exchange-badge--entering"));
+    setTimeout(() => svg.classList.add("s3-badge-svg--seam-active"), 600);
+  }
+
+  function s3PopulateTaskIds(t1, t2) {
+    clearChildren(s3TaskIdBar);
+    const g1 = elem("span", { className: "s3-taskid-group" });
+    g1.appendChild(elem("span", { className: "s3-taskid-exlabels", text: "exchanges A + C  " }));
+    g1.appendChild(elem("span", { className: "s3-taskid-key", text: "task_id_1: " }));
+    const v1 = elem("span", { className: "s3-taskid-val", text: String(t1).slice(0, 16) + "…" });
+    v1.title = String(t1);
+    g1.appendChild(v1);
+    const sep = elem("span", { className: "s3-taskid-sep", text: " · " });
+    const g2 = elem("span", { className: "s3-taskid-group" });
+    g2.appendChild(elem("span", { className: "s3-taskid-exlabels", text: "exchange B  " }));
+    g2.appendChild(elem("span", { className: "s3-taskid-key", text: "task_id_2: " }));
+    const v2 = elem("span", { className: "s3-taskid-val", text: String(t2).slice(0, 16) + "…" });
+    v2.title = String(t2);
+    g2.appendChild(v2);
+    s3TaskIdBar.appendChild(g1);
+    s3TaskIdBar.appendChild(sep);
+    s3TaskIdBar.appendChild(g2);
+  }
+
+  function s3MoveSlot() {
+    const slot = document.querySelector('[data-slot="s3-marius-1400"]');
+    if (!slot) return;
+    slot.classList.add("s3-slot-moving-out");
+    setTimeout(() => { if (slot.parentNode) slot.parentNode.removeChild(slot); }, 400);
+  }
+
+  function s3GainSlot(calId, slotId, time, title, attendees) {
+    const cal = document.getElementById(calId);
+    if (!cal) return;
+    const ev = elem("div", { className: "event s3-slot-appearing booked" });
+    ev.dataset.slot = slotId;
+    ev.appendChild(elem("span", { className: "time", text: time }));
+    const inner = elem("div");
+    inner.appendChild(elem("div", { className: "title", text: title }));
+    inner.appendChild(elem("div", { className: "attendees", text: attendees }));
+    ev.appendChild(inner);
+    cal.appendChild(ev);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ev.classList.remove("s3-slot-appearing");
+        ev.classList.add("s3-slot-appeared");
+      });
+    });
+  }
+
+  async function runScenario3() {
+    s3RunBtn.disabled = true;
+    s3RunBtn.textContent = "Running…";
+
+    let s3Real = null;
+    // Do NOT .catch() here — the rejection must propagate into the try
+    // block below so s3RenderAbort fires on server 500 (e.g.
+    // CascadeAbortedError from a reasoner that returned None). Silently
+    // falling back to animation mode would hide the abort and
+    // misrepresent the agentic-failure behaviour the demo is supposed
+    // to make visible.
+    const s3BackendPromise = backendOk ? fetchCascading() : null;
+
+    const s3FakeHashes = {
+      irisEmit:           fakeHash(31),
+      mariusReceive:      fakeHash(31),
+      mariusEmitAtlas:    fakeHash(43),
+      atlasReceive:       fakeHash(43),
+      atlasEmit:          fakeHash(57),
+      mariusReceiveAtlas: fakeHash(57),
+      mariusEmitIris:     fakeHash(71),
+      irisReceive:        fakeHash(71),
+      taskId1: "animmode-t1-" + fakeHash(3).slice(0, 20),
+      taskId2: "animmode-t2-" + fakeHash(9).slice(0, 20),
+    };
+
+    try {
+      // STEP 1
+      s3SetStep(1);
+      s3SetStatus("step i — Iris builds proposal: 14:00 · 30 min");
+      await sleep(1000);
+
+      // STEP 2
+      s3SetStep(2);
+      s3SetStatus("step ii — Iris→Marius · scoped bytes cross · titles + emails blocked");
+      const a1 = $("s3-arrow-iris-marius");
+      if (a1) a1.classList.add("s3-arrow--active");
+      await sleep(900);
+
+      // STEP 3 — the brand beat.
+      s3SetStep(3);
+      s3SetStatus("step iii — agent reasoning…");
+      const av = $("s3-avatar-marius");
+      if (av) av.classList.add("s3-avatar-reasoning");
+      const rl = $("s3-reasoning-label");
+      if (rl) rl.textContent = "marius' agent — reasoning…";
+
+      if (s3BackendPromise) s3Real = await s3BackendPromise;
+
+      const trace = s3Real ? s3Real.reasoner_trace : {
+        requested_slot: "2026-06-02T14:00:00Z",
+        blocking_event_title: "synthetic-project-sync",
+        blocking_event_attendee: "atlas@meshycal.demo",
+        proposed_new_slot: "2026-06-02T16:00:00Z",
+        reason: "busy at requested slot 2026-06-02T14:00:00Z with atlas@meshycal.demo for \"synthetic-project-sync\"; proposing to move that meeting to 2026-06-02T16:00:00Z, which is free on both calendars",
+      };
+      s3ShowReasoningTrace(trace);
+      await sleep(2800);
+
+      // STEP 4
+      s3SetStep(4);
+      s3StopReasoningSpinner();
+      const rl4 = $("s3-reasoning-label");
+      if (rl4) rl4.textContent = "marius' agent — dispatching to atlas";
+      s3SetStatus("step iv — Marius→Atlas · reschedule proposal dispatched");
+
+      const reschedule = s3Real ? s3Real.marius_reschedule_proposal : {
+        candidates: ["2026-06-02T16:00:00Z"],
+        duration_minutes: 45,
+        constraint_hints: { reason: "synthetic-reschedule-for-new-request" },
+      };
+      const mpEl = $("s3-payload-marius");
+      clearChildren(mpEl);
+      [["candidates", JSON.stringify(reschedule.candidates || [])],
+       ["duration_minutes", String(reschedule.duration_minutes || "")],
+       ["constraint_hints", JSON.stringify(reschedule.constraint_hints || {})]].forEach(([k, v]) => {
+        const row = elem("div", { className: "s3-pp-row" });
+        row.appendChild(elem("span", { className: "s3-pp-k", text: k }));
+        row.appendChild(elem("span", { className: "s3-pp-v", text: v }));
+        mpEl.appendChild(row);
+      });
+      await sleep(500);
+      const a3 = $("s3-arrow-marius-atlas");
+      if (a3) a3.classList.add("s3-arrow--active");
+      await sleep(900);
+
+      // STEP 5
+      s3SetStep(5);
+      s3SetStatus("step v — Atlas accepts · Exchange B tessera fit");
+      const recv = s3Real ? s3Real.marius_reschedule_proposal : reschedule;
+      const acpt = s3Real ? s3Real.atlas_acceptance_payload : {
+        candidates: ["2026-06-02T16:00:00Z"], duration_minutes: 45,
+      };
+      const paEl = $("s3-payload-atlas");
+      clearChildren(paEl);
+      [["candidates", JSON.stringify(recv.candidates || [])],
+       ["duration_minutes", String(recv.duration_minutes || "")]].forEach(([k, v]) => {
+        const row = elem("div", { className: "s3-pp-row" });
+        row.appendChild(elem("span", { className: "s3-pp-k", text: k }));
+        row.appendChild(elem("span", { className: "s3-pp-v", text: v }));
+        paEl.appendChild(row);
+      });
+      const paaEl = $("s3-payload-atlas-acceptance");
+      clearChildren(paaEl);
+      [["candidates", JSON.stringify(acpt.candidates || [])],
+       ["duration_minutes", String(acpt.duration_minutes || "")]].forEach(([k, v]) => {
+        const row = elem("div", { className: "s3-pp-row" });
+        row.appendChild(elem("span", { className: "s3-pp-k", text: k }));
+        row.appendChild(elem("span", { className: "s3-pp-v", text: v }));
+        paaEl.appendChild(row);
+      });
+      await sleep(600);
+      const a4 = $("s3-arrow-atlas-marius");
+      if (a4) a4.classList.add("s3-arrow--active");
+      await sleep(700);
+
+      const exB = s3Real ? s3Real.exchange_marius_atlas : null;
+      s3AppendExchangeBadge("B", "M", "A",
+        exB ? exB.proposal_payload_hash : s3FakeHashes.mariusEmitAtlas,
+        exB ? exB.acceptance_payload_hash : s3FakeHashes.atlasEmit,
+        "task_id_2");
+      await sleep(1000);
+
+      // STEP 6
+      s3SetStep(6);
+      s3SetStatus("step vi — Marius→Iris · acceptance dispatched");
+      await sleep(500);
+      const a5 = $("s3-arrow-marius-iris");
+      if (a5) a5.classList.add("s3-arrow--active");
+
+      const exA = s3Real ? s3Real.exchange_iris_marius_proposal : null;
+      s3AppendExchangeBadge("A", "I", "M",
+        exA ? exA.proposal_payload_hash : s3FakeHashes.irisEmit,
+        exA ? exA.acceptance_payload_hash : s3FakeHashes.irisReceive,
+        "task_id_1");
+      await sleep(700);
+
+      const exC = s3Real ? s3Real.exchange_marius_iris_acceptance : null;
+      s3AppendExchangeBadge("C", "M", "I",
+        exC ? exC.proposal_payload_hash : s3FakeHashes.mariusReceive,
+        exC ? exC.acceptance_payload_hash : s3FakeHashes.mariusEmitIris,
+        "task_id_1");
+      await sleep(800);
+
+      const tid1 = s3Real ? s3Real.exchange_iris_marius_proposal.task_id : s3FakeHashes.taskId1;
+      const tid2 = s3Real ? s3Real.exchange_marius_atlas.task_id : s3FakeHashes.taskId2;
+      s3PopulateTaskIds(tid1, tid2);
+
+      // STEP 7
+      s3SetStep(7);
+      s3SetStatus("step vii — three tessera fits · receipts written");
+
+      const ts1 = s3Real && s3Real.iris_ledger && s3Real.iris_ledger[0]
+        ? s3Real.iris_ledger[0].timestamp : "2026-06-02T14:00:00Z";
+      const ts2 = s3Real && s3Real.iris_ledger && s3Real.iris_ledger[1]
+        ? s3Real.iris_ledger[1].timestamp : "2026-06-02T14:00:03Z";
+
+      clearChildren(s3LedgerIris);
+      const irisEntries = s3Real
+        ? s3Real.iris_ledger.map((r) => ({ seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation, actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash }))
+        : [
+            { seq: 0, ts: ts1, action: "emit",    op: "proposal",   actor: "iris@meshycal.demo",   counterpart: "marius@meshycal.demo", hash: s3FakeHashes.irisEmit },
+            { seq: 1, ts: ts2, action: "receive", op: "acceptance", actor: "marius@meshycal.demo", counterpart: "iris@meshycal.demo",   hash: s3FakeHashes.irisReceive },
+          ];
+      irisEntries.forEach((e) => appendLedgerEntry(s3LedgerIris, e));
+
+      clearChildren(s3LedgerMarius);
+      const mariusEntries = s3Real
+        ? s3Real.marius_ledger.map((r) => ({ seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation, actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash }))
+        : [
+            { seq: 0, ts: ts1, action: "receive", op: "proposal",   actor: "iris@meshycal.demo",   counterpart: "marius@meshycal.demo", hash: s3FakeHashes.mariusReceive },
+            { seq: 1, ts: ts1, action: "emit",    op: "proposal",   actor: "marius@meshycal.demo", counterpart: "atlas@meshycal.demo",  hash: s3FakeHashes.mariusEmitAtlas },
+            { seq: 2, ts: ts2, action: "receive", op: "acceptance", actor: "atlas@meshycal.demo",  counterpart: "marius@meshycal.demo", hash: s3FakeHashes.mariusReceiveAtlas },
+            { seq: 3, ts: ts2, action: "emit",    op: "acceptance", actor: "marius@meshycal.demo", counterpart: "iris@meshycal.demo",   hash: s3FakeHashes.mariusEmitIris },
+          ];
+      mariusEntries.forEach((e) => appendLedgerEntry(s3LedgerMarius, e));
+
+      clearChildren(s3LedgerAtlas);
+      const atlasEntries = s3Real
+        ? s3Real.atlas_ledger.map((r) => ({ seq: r.sequence, ts: r.timestamp, action: r.action_type, op: r.operation, actor: r.actor, counterpart: r.counterpart, hash: r.payload_hash }))
+        : [
+            { seq: 0, ts: ts1, action: "receive", op: "proposal",   actor: "marius@meshycal.demo", counterpart: "atlas@meshycal.demo",  hash: s3FakeHashes.atlasReceive },
+            { seq: 1, ts: ts2, action: "emit",    op: "acceptance", actor: "atlas@meshycal.demo",  counterpart: "marius@meshycal.demo", hash: s3FakeHashes.atlasEmit },
+          ];
+      atlasEntries.forEach((e) => appendLedgerEntry(s3LedgerAtlas, e));
+
+      s3TesseraFit.classList.add("active");
+      await sleep(2800);
+      s3TesseraFit.classList.remove("active");
+
+      // STEP 8 — calendar deltas.
+      s3SetStep(8);
+      s3SetStatus("step viii — calendars updated across three principals");
+      s3MoveSlot();
+      await sleep(420);
+      s3GainSlot("s3-cal-marius", "s3-marius-1600", "16:00", "synthetic-project-sync", "atlas · rescheduled · signed");
+      await sleep(80);
+      s3GainSlot("s3-cal-iris", "s3-iris-1400", "14:00", "synthetic-iris-marius-meeting", "marius · tessera ref · signed");
+      await sleep(400);
+      const atlasEmpty = $("s3-cal-atlas").querySelector(".s3-cal-atlas-empty");
+      if (atlasEmpty) atlasEmpty.remove();
+      s3GainSlot("s3-cal-atlas", "s3-atlas-1600", "16:00", "synthetic-project-sync", "marius · rescheduled · signed");
+      await sleep(1200);
+
+      const tail = s3Real
+        ? "done — real cascade in " + s3Real.duration_ms + "ms · three fits · three books match · press Reset"
+        : "done — three fits (animation mode) · press Reset to run again";
+      s3SetStatus(tail);
+    } catch (err) {
+      s3RenderAbort(err);
+    } finally {
+      s3RunBtn.disabled = false;
+      s3RunBtn.textContent = "Run again";
+    }
+  }
+
+  function s3Reset() {
+    s3SetStep(0);
+    s3SetStatus("ready — press to begin");
+    s3RunBtn.disabled = false;
+    s3RunBtn.textContent = "Request meeting";
+
+    ["s3-arrow-iris-marius","s3-arrow-marius-atlas","s3-arrow-atlas-marius","s3-arrow-marius-iris"]
+      .forEach((id) => { const el = $(id); if (el) el.classList.remove("s3-arrow--active"); });
+
+    const avatar = $("s3-avatar-marius");
+    if (avatar) avatar.classList.remove("s3-avatar-reasoning");
+
+    s3TracePanel.classList.remove("s3-reasoning-trace--visible");
+    clearChildren(s3TraceFields);
+    s3TraceReason.textContent = "— awaiting —";
+    s3TraceSpinner.classList.add("s3-trace-spinner--active");
+    const eyebrow = s3TracePanel.querySelector(".s3-trace-eyebrow");
+    if (eyebrow) eyebrow.textContent = "agent reasoning…";
+
+    clearChildren(s3BadgesEl);
+
+    clearChildren(s3TaskIdBar);
+    s3TaskIdBar.appendChild(elem("span", { className: "s3-taskid-placeholder", text: "task IDs will appear when the cascade completes" }));
+
+    const label = $("s3-reasoning-label");
+    if (label) label.textContent = "marius' agent — awaiting proposal";
+
+    setLedgerEmpty(s3LedgerIris,   "— no entries yet —");
+    setLedgerEmpty(s3LedgerMarius, "— no entries yet —");
+    setLedgerEmpty(s3LedgerAtlas,  "— no entries yet —");
+
+    s3TesseraFit.classList.remove("active");
+
+    const m1600 = document.querySelector('[data-slot="s3-marius-1600"]');
+    if (m1600) m1600.remove();
+    const mariusCal = $("s3-cal-marius");
+    if (mariusCal && !document.querySelector('[data-slot="s3-marius-1400"]')) {
+      const ev1400 = elem("div", { className: "event s3-blocking" });
+      ev1400.dataset.slot = "s3-marius-1400";
+      ev1400.appendChild(elem("span", { className: "time", text: "14:00" }));
+      const inner = elem("div");
+      inner.appendChild(elem("div", { className: "title", text: "synthetic-project-sync" }));
+      inner.appendChild(elem("div", { className: "attendees", text: "45 min · atlas" }));
+      ev1400.appendChild(inner);
+      const ev1530 = mariusCal.children[1];
+      if (ev1530) mariusCal.insertBefore(ev1400, ev1530);
+      else mariusCal.appendChild(ev1400);
+    }
+
+    const i1400 = document.querySelector('[data-slot="s3-iris-1400"]');
+    if (i1400) i1400.remove();
+
+    const a1600 = document.querySelector('[data-slot="s3-atlas-1600"]');
+    if (a1600) a1600.remove();
+    const atlasCal = $("s3-cal-atlas");
+    if (atlasCal && !atlasCal.querySelector(".s3-cal-atlas-empty")) {
+      const placeholder = elem("div", { className: "event free s3-cal-atlas-empty" });
+      placeholder.appendChild(elem("span", { className: "time", text: "—" }));
+      const inner = elem("div");
+      inner.appendChild(elem("div", { className: "title", text: "no events yet" }));
+      inner.appendChild(elem("div", { className: "attendees", text: "atlas' internal calendar not modeled in v0" }));
+      placeholder.appendChild(inner);
+      atlasCal.appendChild(placeholder);
+    }
+
+    clearChildren($("s3-payload-atlas"));
+    $("s3-payload-atlas").appendChild(elem("div", { className: "s3-pp-pending", text: "— pending cascade —" }));
+    clearChildren($("s3-payload-atlas-acceptance"));
+    $("s3-payload-atlas-acceptance").appendChild(elem("div", { className: "s3-pp-pending", text: "— pending —" }));
+
+    clearChildren($("s3-payload-marius"));
+    $("s3-payload-marius").appendChild(elem("div", { className: "s3-pp-row s3-pp-pending", text: "— pending reasoning —" }));
+
+    const banner = document.querySelector(".s3-abort-banner");
+    if (banner) banner.remove();
+  }
+
+  function s3RenderAbort(err) {
+    const msg = (err && err.detail) || (err && err.message) || "unknown error";
+    const existing = document.querySelector(".s3-abort-banner");
+    if (existing) existing.remove();
+    const banner = elem("div", { className: "s3-abort-banner" });
+    banner.appendChild(elem("div", { className: "s3-abort-reason", text: msg }));
+    const stage = $("s3-stage");
+    if (stage && stage.nextSibling) stage.parentNode.insertBefore(banner, stage.nextSibling);
+    else if (stage) stage.parentNode.appendChild(banner);
+    s3SetStatus("cascade aborted — see details above · press Reset to clear");
+  }
+
   runBtn.addEventListener("click", () => {
     if (runBtn.textContent === "Run again") {
       reset();
@@ -1921,23 +3751,56 @@ button[disabled], .btn[disabled] {
   });
   resetBtn.addEventListener("click", reset);
 
+  s2RunBtn.addEventListener("click", () => {
+    if (s2RunBtn.textContent === "Run again") {
+      s2Reset();
+    }
+    runScenario2();
+  });
+  s2ResetBtn.addEventListener("click", s2Reset);
+
+  s3RunBtn.addEventListener("click", () => {
+    if (s3RunBtn.textContent === "Run again") {
+      s3Reset();
+    }
+    runScenario3();
+  });
+  s3ResetBtn.addEventListener("click", s3Reset);
+
   document.querySelectorAll(".scenarios-tabs button").forEach((tab) => {
     tab.addEventListener("click", () => {
       const sc = parseInt(tab.dataset.scenario, 10);
+
       document.querySelectorAll(".scenarios-tabs button").forEach((b) =>
         b.setAttribute("aria-selected", b === tab ? "true" : "false")
       );
-      if (sc === 1) {
-        setStatus("ready — press to begin");
-      } else if (sc === 2) {
-        setStatus("scenario ii — group find — backend work in progress");
-      } else {
-        setStatus("scenario iii — cascading reschedule — backend + agent reasoning needed");
-      }
+
+      document.querySelectorAll("[data-scenario-content]").forEach((block) => {
+        const bn = parseInt(block.dataset.scenarioContent, 10);
+        const match = bn === sc;
+        block.style.display = match ? "" : "none";
+        block.setAttribute("aria-hidden", match ? "false" : "true");
+      });
+
+      if (sc === 1) setStatus("ready — press to begin");
+      else if (sc === 2) s2SetStatus("ready — press to begin");
+      else if (sc === 3) s3SetStatus("ready — press to begin");
     });
   });
 
   reset();
+  s2Reset();
+  s3Reset();
+
+  // Initial visibility: scenario 1 visible, 2 and 3 hidden. The data-scenario-content
+  // wrappers are also set inline; this is the JS-side belt-and-braces.
+  document.querySelectorAll("[data-scenario-content]").forEach((block) => {
+    const bn = parseInt(block.dataset.scenarioContent, 10);
+    const match = bn === 1;
+    block.style.display = match ? "" : "none";
+    block.setAttribute("aria-hidden", match ? "false" : "true");
+  });
+
   probeBackend();
   // Re-probe every 10s in case the user starts the server after page load.
   setInterval(probeBackend, 10000);
