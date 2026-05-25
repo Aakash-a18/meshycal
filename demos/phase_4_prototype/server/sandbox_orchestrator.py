@@ -63,7 +63,6 @@ from .sandbox_models import (
 )
 from .sandbox_reasoners import (
     ProposalVerdict,
-    ScriptedSandboxReasoner,
     build_sandbox_reasoner,
     reasoner_label,
 )
