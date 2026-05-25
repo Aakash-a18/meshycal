@@ -1186,6 +1186,99 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   letter-spacing: 0.12em;
   margin-top: 2px;
 }
+
+/* Event-detail popover — appears on a non-drag click on a grid event. */
+.sb-event-popover {
+  position: fixed;
+  width: 260px;
+  background: var(--paper);
+  border: 1px solid var(--ink-soft);
+  padding: 16px 18px;
+  z-index: 100;
+  box-shadow: 0 8px 24px hsl(220 28% 11% / 0.25);
+  font-family: var(--body);
+  animation: sbPopFade 140ms ease-out;
+}
+@keyframes sbPopFade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.sb-pop-title {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+.sb-pop-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.sb-pop-meta .blocking-tag { color: var(--terracotta-deep); }
+.sb-pop-attendees {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-mute);
+  margin-bottom: 4px;
+}
+.sb-pop-attendees::before {
+  content: "with · ";
+  color: var(--ink-mute);
+  opacity: 0.6;
+}
+.sb-pop-owner {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink-mute);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--rule);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sb-pop-owner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sb-pop-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.sb-pop-delete, .sb-pop-close {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  cursor: pointer;
+  flex: 1;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.sb-pop-delete {
+  background: transparent;
+  color: var(--terracotta-deep);
+  border: 1px solid var(--terracotta);
+}
+.sb-pop-delete:hover {
+  background: var(--terracotta);
+  color: var(--paper);
+  border-color: var(--terracotta);
+}
+.sb-pop-close {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+}
+.sb-pop-close:hover {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
 .sb-grid-event-time {
   font-weight: 500;
   color: var(--ink-soft);
@@ -3592,6 +3685,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
    *  receive the listener and stay pinned in place.
    * ----------------------------------------------------------------- */
   const SNAP_MINUTES = 15;
+  const DRAG_THRESHOLD_PX = 4;
   let _sbDragTooltip = null;
 
   function attachGridDrag(node, principal, ev) {
@@ -3609,11 +3703,13 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
         startTimeMin: timeToMinutes(ev.time),
         startTopPx: (parseFloat(node.style.top) || 0),
         duration: ev.duration,
-        committed: false
+        committed: false,
+        // Below-threshold movement keeps this in "could still be a
+        // click" mode. We flip into active drag only once the pointer
+        // moves more than DRAG_THRESHOLD_PX so a quick tap reads as a
+        // click and opens the event popover instead.
+        dragActive: false
       };
-
-      node.classList.add("sb-grid-event--dragging");
-      showDragTooltip(node, ev.time, 0);
     }
 
     function moveDrag(e) {
@@ -3621,6 +3717,17 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       e.preventDefault();
 
       const deltaPx = e.clientY - drag.startY;
+      const absDelta = Math.abs(deltaPx);
+
+      if (!drag.dragActive) {
+        if (absDelta <= DRAG_THRESHOLD_PX) return;
+        // Promote to active drag — visuals come on now, not on the
+        // initial pointerdown.
+        drag.dragActive = true;
+        node.classList.add("sb-grid-event--dragging");
+        showDragTooltip(node, ev.time, 0);
+      }
+
       const deltaMinRaw = deltaPx * (60 / GRID_HOUR_PX);
       const deltaMinSnap = Math.round(deltaMinRaw / SNAP_MINUTES) * SNAP_MINUTES;
 
@@ -3641,26 +3748,33 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       if (drag.committed) return;
       drag.committed = true;
       try { node.releasePointerCapture(e.pointerId); } catch (_) {}
-      node.classList.remove("sb-grid-event--dragging");
-      hideDragTooltip();
 
-      if (commit) {
-        // Read the final snap position from the node's top px.
+      if (drag.dragActive) {
+        node.classList.remove("sb-grid-event--dragging");
+        hideDragTooltip();
+      }
+
+      if (!commit) {
+        if (drag.dragActive) node.style.top = drag.startTopPx + "px";
+        drag = null;
+        return;
+      }
+
+      if (drag.dragActive) {
+        // Real drag — commit the new time.
         const finalTopPx = parseFloat(node.style.top) || 0;
         const finalStartMin = Math.round((finalTopPx / GRID_HOUR_PX) * 60 / SNAP_MINUTES) * SNAP_MINUTES;
         const newHHMM = _minutesToHHMM(finalStartMin);
 
         if (newHHMM !== ev.time) {
           ev.time = newHHMM;
-          persistSession(); // re-renders the grid with new layout + free bands
+          persistSession();
         } else {
-          // No net move — snap the DOM position back to its rendered
-          // position (in case the user did sub-snap nudging).
           node.style.top = drag.startTopPx + "px";
         }
       } else {
-        // Cancelled — restore visual position.
-        node.style.top = drag.startTopPx + "px";
+        // Pure click — show the event-detail popover.
+        showEventPopover(node, principal, ev);
       }
       drag = null;
     }
@@ -3669,6 +3783,115 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     node.addEventListener("pointermove", moveDrag);
     node.addEventListener("pointerup",     (e) => endDrag(e, true));
     node.addEventListener("pointercancel", (e) => endDrag(e, false));
+  }
+
+  /* -----------------------------------------------------------------
+   *  Event-detail popover: click an event on the grid to see its
+   *  details and delete it.
+   * ----------------------------------------------------------------- */
+  let _sbPopover = null;
+
+  function showEventPopover(node, principal, ev) {
+    hideEventPopover();
+    hideDragTooltip();
+
+    const pop = elem("div", { className: "sb-event-popover", attrs: { role: "dialog", "aria-label": "event details" } });
+
+    pop.appendChild(elem("div", { className: "sb-pop-title", text: ev.title || "(untitled)" }));
+
+    const meta = elem("div", { className: "sb-pop-meta" });
+    meta.appendChild(document.createTextNode(ev.time + " · " + ev.duration + " min"));
+    if (ev.isBlocking) {
+      meta.appendChild(document.createTextNode(" · "));
+      meta.appendChild(elem("span", { className: "blocking-tag", text: "hard block" }));
+    }
+    pop.appendChild(meta);
+
+    if (ev.attendees) {
+      pop.appendChild(elem("div", { className: "sb-pop-attendees", text: ev.attendees }));
+    }
+
+    const owner = elem("div", { className: "sb-pop-owner" });
+    const dot = elem("div", { className: "sb-pop-owner-dot" });
+    dot.style.background = "var(--slot-" + principal.colorSlot + "-bg)";
+    owner.appendChild(dot);
+    owner.appendChild(document.createTextNode(principal.displayName + " · " + principal.id));
+    pop.appendChild(owner);
+
+    const buttons = elem("div", { className: "sb-pop-buttons" });
+
+    const delBtn = elem("button", {
+      className: "sb-pop-delete",
+      attrs: { type: "button" },
+      text: "Delete event"
+    });
+    delBtn.addEventListener("click", () => {
+      const idx = principal.calendar.indexOf(ev);
+      if (idx >= 0) {
+        principal.calendar.splice(idx, 1);
+        persistSession();
+        renderEditor();         // refresh editor card event counts
+      }
+      hideEventPopover();
+    });
+    buttons.appendChild(delBtn);
+
+    const closeBtn = elem("button", {
+      className: "sb-pop-close",
+      attrs: { type: "button" },
+      text: "Close"
+    });
+    closeBtn.addEventListener("click", hideEventPopover);
+    buttons.appendChild(closeBtn);
+
+    pop.appendChild(buttons);
+
+    document.body.appendChild(pop);
+    positionEventPopover(node, pop);
+    _sbPopover = pop;
+
+    // Defer outside-click + escape wiring until after the current
+    // event loop tick so the click that opened the popover doesn't
+    // immediately close it.
+    setTimeout(() => {
+      document.addEventListener("pointerdown", _sbOutsideClickHandler, true);
+      document.addEventListener("keydown",     _sbEscKeyHandler);
+    }, 0);
+  }
+
+  function _sbOutsideClickHandler(e) {
+    if (!_sbPopover) return;
+    if (_sbPopover.contains(e.target)) return;
+    hideEventPopover();
+  }
+
+  function _sbEscKeyHandler(e) {
+    if (e.key === "Escape") hideEventPopover();
+  }
+
+  function hideEventPopover() {
+    if (_sbPopover && _sbPopover.parentNode) {
+      _sbPopover.parentNode.removeChild(_sbPopover);
+    }
+    _sbPopover = null;
+    document.removeEventListener("pointerdown", _sbOutsideClickHandler, true);
+    document.removeEventListener("keydown",     _sbEscKeyHandler);
+  }
+
+  function positionEventPopover(node, pop) {
+    const rect = node.getBoundingClientRect();
+    const popW = pop.offsetWidth  || 260;
+    const popH = pop.offsetHeight || 180;
+    let left = rect.right + 12;
+    if (left + popW > window.innerWidth - 8) {
+      left = rect.left - popW - 12;
+    }
+    let top = rect.top;
+    if (top + popH > window.innerHeight - 8) {
+      top = window.innerHeight - popH - 8;
+    }
+    pop.style.left = Math.max(8, left) + "px";
+    pop.style.top  = Math.max(8, top)  + "px";
   }
 
   function _minutesToHHMM(offsetMinutes) {
