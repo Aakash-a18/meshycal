@@ -21,6 +21,7 @@ dependencies = [
     "jsonschema>=4.21",         # validate proposal payloads against meshycal.scheduling/proposal-v1
     "pydantic>=2.0",            # MeshyCal-side typed models
     "pydantic-settings>=2.0",   # env-var configuration (matches Mesherra's discipline)
+    "anthropic>=0.45.0",        # Phase 4 sandbox AnthropicReasoner; only invoked when a principal opts in
 ]
 
 [project.optional-dependencies]

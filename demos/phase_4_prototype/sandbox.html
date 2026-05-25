@@ -2391,7 +2391,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   }
 
   /* ===================================================================
-   *  Backend probe
+   *  Backend probe + sandbox session lifecycle
    * =================================================================== */
   async function probeBackend() {
     const badge = $("sb-session-badge");
@@ -2402,15 +2402,136 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       clearTimeout(t);
       if (!res.ok) throw new Error("not-ok");
       SB_STATE.backendOk = true;
-      badge.textContent = "● backend live · animation mode (no sandbox endpoints yet)";
-      badge.style.color = "hsl(155 30% 32%)";
-      badge.style.borderColor = "hsl(155 30% 50%)";
     } catch (_) {
       SB_STATE.backendOk = false;
+    }
+    if (SB_STATE.backendOk) {
+      try {
+        const sess = await sbCreateBackendSession();
+        SB_STATE.sessionToken = sess.session_token;
+        badge.textContent = "● session live · " + sess.session_token.slice(0, 8) + "… · real mesherra";
+        badge.style.color = "hsl(155 30% 32%)";
+        badge.style.borderColor = "hsl(155 30% 50%)";
+      } catch (e) {
+        // Backend up but session create failed — degrade to animation mode.
+        SB_STATE.backendOk = false;
+        SB_STATE.sessionToken = null;
+        badge.textContent = "● backend up · session create failed · animation mode";
+        badge.style.color = "hsl(40 30% 36%)";
+        badge.style.borderColor = "hsl(40 35% 55%)";
+      }
+    } else {
+      SB_STATE.sessionToken = null;
       badge.textContent = "○ backend offline · animation mode";
       badge.style.color = "hsl(13 50% 38%)";
       badge.style.borderColor = "hsl(13 50% 55%)";
     }
+  }
+
+  async function sbCreateBackendSession() {
+    const res = await fetch(SB_SANDBOX_API_BASE + "/sandbox/session", { method: "POST" });
+    if (!res.ok) throw new Error("create session: " + res.status);
+    return await res.json();
+  }
+
+  async function sbDestroyBackendSession(token) {
+    if (!token) return;
+    try {
+      await fetch(SB_SANDBOX_API_BASE + "/sandbox/session/" + encodeURIComponent(token), {
+        method: "DELETE",
+      });
+    } catch (_) {}
+  }
+
+  /* Push a principal to the backend session. Includes the api_key
+     from in-memory SB_STATE.apiKeys[pid] if one was entered. */
+  async function sbPushPrincipal(token, p) {
+    const body = {
+      id: p.id,
+      display_name: p.displayName,
+      color_slot: p.colorSlot,
+      calendar: p.calendar.map(ev => ({
+        time: ev.time,
+        duration: parseInt(ev.duration, 10) || 30,
+        title: ev.title || "",
+        attendees: ev.attendees || "",
+        is_blocking: !!ev.isBlocking
+      })),
+      policy: {
+        outbound_allow: p.policy.outboundAllow.slice(),
+        outbound_block: p.policy.outboundBlock.slice(),
+        inbound_allow:  p.policy.inboundAllow.slice(),
+        max_cascade_depth: p.policy.maxCascadeDepth | 0
+      },
+      reasoner: {
+        provider: p.reasoner.provider || "scripted",
+        model: p.reasoner.model || "",
+        base_url: p.reasoner.baseUrl || ""
+      },
+      api_key: SB_STATE.apiKeys[p.id] || null
+    };
+    const res = await fetch(
+      SB_SANDBOX_API_BASE + "/sandbox/session/" + encodeURIComponent(token) +
+      "/principal/" + encodeURIComponent(p.id),
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error("PUT principal " + p.id + ": " + (detail.detail || res.status));
+    }
+    return await res.json();
+  }
+
+  /* Build the request body that the backend's POST /sandbox/.../run expects. */
+  function sbBuildRequestBody(senderId, recipientId, duration) {
+    // The backend expects ISO 8601 UTC. The form fields give datetime-local
+    // (no tz). Append :00Z so we land on the right minute-level UTC slot.
+    const earliestRaw = $("sb-req-earliest").value || "";
+    const latestRaw   = $("sb-req-latest").value || "";
+    function ensureZ(s) {
+      if (!s) return s;
+      if (s.endsWith("Z")) return s;
+      // datetime-local is "YYYY-MM-DDTHH:MM" — pad seconds + Z
+      return s.length === 16 ? s + ":00Z" : s + (s.endsWith(":00") ? "Z" : ":00Z");
+    }
+    return {
+      sender_id: senderId,
+      recipient_id: recipientId,
+      earliest: ensureZ(earliestRaw),
+      latest:   ensureZ(latestRaw),
+      duration: parseInt(duration, 10) || 30,
+      note: $("sb-req-note").value || ""
+    };
+  }
+
+  /* Fire a 2-party run against the real backend. Returns the RunResult,
+     or throws on failure. Pushes the involved principals first. */
+  async function sbBackendRun2(sender, recipient, duration) {
+    const token = SB_STATE.sessionToken;
+    if (!token) throw new Error("no session token");
+    // Push sender, recipient — and all others so the session reflects
+    // current editor state (useful for shared-meeting accounting).
+    for (const p of SB_STATE.principals) {
+      await sbPushPrincipal(token, p);
+    }
+    const body = sbBuildRequestBody(sender.id, recipient.id, duration);
+    const res = await fetch(
+      SB_SANDBOX_API_BASE + "/sandbox/session/" + encodeURIComponent(token) + "/run",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || ("run: " + res.status));
+    }
+    return await res.json();
   }
 
   /* ===================================================================
@@ -3807,9 +3928,22 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
     try {
       if (cascadePartner) {
+        // Phase 2 — 3-party cascading reschedule via real backend
+        // is not built yet. Keep scripted animation for now.
         await runThreeParty(sender, recipient, cascadePartner, duration);
       } else {
-        await runTwoParty(sender, recipient, duration);
+        // Phase 1 — 2-party real Mesherra exchange via the backend
+        // when available, scripted animation as offline fallback.
+        let backendResult = null;
+        if (SB_STATE.backendOk && SB_STATE.sessionToken) {
+          try {
+            backendResult = await sbBackendRun2(sender, recipient, duration);
+          } catch (e) {
+            console.warn("backend run failed, falling back to animation:", e.message);
+            backendResult = null;
+          }
+        }
+        await runTwoParty(sender, recipient, duration, backendResult);
       }
     } catch (err) {
       renderAbort(err && err.message ? err.message : "Unknown error.");
@@ -3822,7 +3956,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   /* ===================================================================
    *  Two-party choreography
    * =================================================================== */
-  async function runTwoParty(sender, recipient, duration) {
+  async function runTwoParty(sender, recipient, duration, backendResult) {
     const root = $("sb-stage-root");
     clearChildren(root);
 
@@ -3834,19 +3968,49 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     root.appendChild(buildLedgerBlock(principalIds));
 
     buildSteps(["build", "scope", "cross", "match", "seal", "fit", "update"]);
-    setStatus("two-party run · " + sender.displayName + " → " + recipient.displayName);
+    const isReal = !!backendResult;
+    const reasonerOfRecipient = isReal
+      ? (backendResult.reasoner_summary && backendResult.reasoner_summary[recipient.id]) || "scripted"
+      : "scripted";
+    setStatus(
+      (isReal ? "two-party · real mesherra · " : "two-party · animation · ") +
+      sender.displayName + " → " + recipient.displayName +
+      (isReal && reasonerOfRecipient !== "scripted" ? " · " + reasonerOfRecipient : "")
+    );
     $("sb-abort-banner").classList.remove("sb-abort-visible");
     hideTesseraFit();
 
-    // Hashes
-    const h = {
-      propEmit:  fakeHash(11 + (sender.colorSlot+1) * 17),
-      propRecv:  fakeHash(13 + (recipient.colorSlot+1) * 19),
-      acptEmit:  fakeHash(23 + (recipient.colorSlot+1) * 29),
-      acptRecv:  fakeHash(29 + (sender.colorSlot+1) * 31),
-      richScope: fakeHash(41 + duration),
-    };
-    const taskId = "task_" + fakeHash(7).slice(0, 12);
+    // Hashes — real ones from the backend run when available, scripted
+    // fakeHash() otherwise.
+    let h, taskId, chosenSlot, recipientLedger, senderLedger, calendarDeltas;
+    if (isReal) {
+      const ex = (backendResult.exchanges && backendResult.exchanges[0]) || {};
+      h = {
+        propEmit:  ex.proposal_payload_hash || backendResult.scoped_payload_hash || "",
+        propRecv:  ex.proposal_payload_hash || backendResult.scoped_payload_hash || "",
+        acptEmit:  ex.acceptance_payload_hash || "",
+        acptRecv:  ex.acceptance_payload_hash || "",
+        richScope: backendResult.rich_payload_hash || "",
+      };
+      taskId = ex.task_id || "task_" + (backendResult.scoped_payload_hash || "").slice(0, 12);
+      senderLedger    = (backendResult.ledgers && backendResult.ledgers[sender.id]) || [];
+      recipientLedger = (backendResult.ledgers && backendResult.ledgers[recipient.id]) || [];
+      calendarDeltas  = backendResult.calendar_deltas || [];
+      const addDelta = calendarDeltas.find(d => d.delta_type === "add" && d.principal_id === recipient.id);
+      chosenSlot = addDelta ? addDelta.time : null;
+    } else {
+      h = {
+        propEmit:  fakeHash(11 + (sender.colorSlot+1) * 17),
+        propRecv:  fakeHash(13 + (recipient.colorSlot+1) * 19),
+        acptEmit:  fakeHash(23 + (recipient.colorSlot+1) * 29),
+        acptRecv:  fakeHash(29 + (sender.colorSlot+1) * 31),
+        richScope: fakeHash(41 + duration),
+      };
+      taskId = "task_" + fakeHash(7).slice(0, 12);
+      chosenSlot = "13:00";
+      senderLedger = recipientLedger = [];
+      calendarDeltas = [];
+    }
 
     // Step I — build
     setStep(1);
@@ -3866,7 +4030,10 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     activateArrow("sb-arrow-fwd");
     narrativeBeat("The scoped payload crosses the wire. " + recipient.displayName + " receives only what " + sender.displayName + "'s policy permitted.");
     dialogueAppend(sender.id, sender.displayName + " · agent", "→ proposal_v1",
-      "candidates: 3 slots · duration: " + duration + " min · constraint_hints: { tz: \"Europe/Lisbon\" }. Titles + attendees not enclosed.", false);
+      "candidates: " + (isReal && backendResult.scoped_payloads && backendResult.scoped_payloads[recipient.id] && backendResult.scoped_payloads[recipient.id].candidates
+        ? backendResult.scoped_payloads[recipient.id].candidates.length + " slots"
+        : "3 slots") +
+      " · duration: " + duration + " min · constraint_hints crossed. Titles + attendees blocked at the airlock.", false);
     await sleep(900);
     revealScopedPayload(recipient.id, recipient.policy.inboundAllow, [], h.propRecv);
     await sleep(700);
@@ -3874,34 +4041,69 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     // Step IV — match
     setStep(4);
     narrativeBeat(recipient.displayName + "'s agent scans the candidates, picks the slot that fits.");
-    dialogueAppend(recipient.id, recipient.displayName + " · agent", "← acceptance",
-      "Accepts 13:00 — the only candidate clear of " + recipient.displayName + "'s existing blocks.", false);
+    const acceptanceMsg = isReal
+      ? (chosenSlot
+          ? "Accepts " + chosenSlot + " — picked by " + reasonerOfRecipient + " against " + recipient.displayName + "'s calendar."
+          : "Rejected: every candidate conflicts with " + recipient.displayName + "'s calendar.")
+      : "Accepts " + chosenSlot + " — the only candidate clear of " + recipient.displayName + "'s existing blocks.";
+    dialogueAppend(recipient.id, recipient.displayName + " · agent", "← acceptance", acceptanceMsg, false);
     await sleep(900);
 
     // Step V — seal
     setStep(5);
     activateArrow("sb-arrow-back");
     appendExchangeBadge("A", sender.displayName, recipient.displayName, h.propEmit, h.acptEmit, taskId);
-    appendLedgerEntry(sender.id,    { seq: 1, ts: nowTs(), action: "emit",    op: "proposal_v1",   actor: sender.id,    counterpart: recipient.id, hash: h.propEmit });
-    appendLedgerEntry(recipient.id, { seq: 1, ts: nowTs(), action: "receive", op: "proposal_v1",   actor: recipient.id, counterpart: sender.id,    hash: h.propRecv });
-    await sleep(550);
-    appendLedgerEntry(recipient.id, { seq: 2, ts: nowTs(), action: "emit",    op: "acceptance_v1", actor: recipient.id, counterpart: sender.id,    hash: h.acptEmit });
-    appendLedgerEntry(sender.id,    { seq: 2, ts: nowTs(), action: "receive", op: "acceptance_v1", actor: sender.id,    counterpart: recipient.id, hash: h.acptRecv });
+    if (isReal && senderLedger.length > 0 && recipientLedger.length > 0) {
+      // Real Residue entries from the backend. Interleave by sequence to
+      // give the visual order of [iris emit, marius recv, marius emit, iris recv].
+      const emitProp = senderLedger.find(e => e.operation === "proposal" && e.action_type === "emit");
+      const recvProp = recipientLedger.find(e => e.operation === "proposal" && e.action_type === "receive");
+      const emitAcpt = recipientLedger.find(e => e.operation === "acceptance" && e.action_type === "emit");
+      const recvAcpt = senderLedger.find(e => e.operation === "acceptance" && e.action_type === "receive");
+      if (emitProp) appendLedgerEntry(sender.id,    { seq: 1, ts: emitProp.timestamp, action: emitProp.action_type, op: emitProp.operation + "_v1", actor: emitProp.actor, counterpart: emitProp.counterpart, hash: emitProp.payload_hash });
+      if (recvProp) appendLedgerEntry(recipient.id, { seq: 1, ts: recvProp.timestamp, action: recvProp.action_type, op: recvProp.operation + "_v1", actor: recvProp.actor, counterpart: recvProp.counterpart, hash: recvProp.payload_hash });
+      await sleep(550);
+      if (emitAcpt) appendLedgerEntry(recipient.id, { seq: 2, ts: emitAcpt.timestamp, action: emitAcpt.action_type, op: emitAcpt.operation + "_v1", actor: emitAcpt.actor, counterpart: emitAcpt.counterpart, hash: emitAcpt.payload_hash });
+      if (recvAcpt) appendLedgerEntry(sender.id,    { seq: 2, ts: recvAcpt.timestamp, action: recvAcpt.action_type, op: recvAcpt.operation + "_v1", actor: recvAcpt.actor, counterpart: recvAcpt.counterpart, hash: recvAcpt.payload_hash });
+    } else {
+      appendLedgerEntry(sender.id,    { seq: 1, ts: nowTs(), action: "emit",    op: "proposal_v1",   actor: sender.id,    counterpart: recipient.id, hash: h.propEmit });
+      appendLedgerEntry(recipient.id, { seq: 1, ts: nowTs(), action: "receive", op: "proposal_v1",   actor: recipient.id, counterpart: sender.id,    hash: h.propRecv });
+      await sleep(550);
+      appendLedgerEntry(recipient.id, { seq: 2, ts: nowTs(), action: "emit",    op: "acceptance_v1", actor: recipient.id, counterpart: sender.id,    hash: h.acptEmit });
+      appendLedgerEntry(sender.id,    { seq: 2, ts: nowTs(), action: "receive", op: "acceptance_v1", actor: sender.id,    counterpart: recipient.id, hash: h.acptRecv });
+    }
     await sleep(700);
 
     // Step VI — fit
     setStep(6);
-    narrativeBeat("Two ledgers, two signed entries each, one matching scoped hash. The tesserae fit.");
-    showTesseraFit("tessera fit · trust verified");
+    const fitVerdict = isReal && chosenSlot
+      ? "tessera fit · real signed exchange"
+      : (isReal ? "no acceptance · all candidates conflicted" : "tessera fit · trust verified");
+    narrativeBeat(isReal
+      ? (chosenSlot
+          ? "Two real Residue ledgers, four signed entries, one matching scoped payload_hash. The tesserae fit."
+          : "Two ledgers signed the exchange; no slot was accepted — the run is recorded honestly.")
+      : "Two ledgers, two signed entries each, one matching scoped hash. The tesserae fit.");
+    if (chosenSlot) showTesseraFit(fitVerdict);
     await sleep(1700);
     hideTesseraFit();
 
     // Step VII — update
     setStep(7);
-    narrativeBeat("Both calendars gain a signed, agreed meeting. No titles or attendees ever crossed the wire.");
-    gainSlot(sender.id,    "13:00", "meeting with " + recipient.displayName, "signed · 30 min");
-    gainSlot(recipient.id, "13:00", "meeting with " + sender.displayName,    "signed · 30 min");
-    setStatus("run complete · " + sender.displayName + " ↔ " + recipient.displayName);
+    if (chosenSlot) {
+      narrativeBeat("Both calendars gain a signed, agreed meeting. No titles or attendees ever crossed the wire.");
+      if (isReal && calendarDeltas.length > 0) {
+        calendarDeltas.filter(d => d.delta_type === "add").forEach(d => {
+          gainSlot(d.principal_id, d.time, d.title, d.attendees);
+        });
+      } else {
+        gainSlot(sender.id,    chosenSlot, "meeting with " + recipient.displayName, "signed · " + duration + " min");
+        gainSlot(recipient.id, chosenSlot, "meeting with " + sender.displayName,    "signed · " + duration + " min");
+      }
+    } else {
+      narrativeBeat("No slot accepted. Calendars unchanged. The audit trail still shows what was attempted and why.");
+    }
+    setStatus((isReal ? "real run complete · " : "run complete · ") + sender.displayName + " ↔ " + recipient.displayName);
   }
 
   /* ===================================================================
@@ -4060,7 +4262,14 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   /* ===================================================================
    *  Reset session
    * =================================================================== */
-  function resetSession() {
+  async function resetSession() {
+    // Tear down the backend session if we have one. Fire-and-forget so
+    // the UI reset doesn't block on network.
+    const oldToken = SB_STATE.sessionToken;
+    if (oldToken) {
+      sbDestroyBackendSession(oldToken);
+      SB_STATE.sessionToken = null;
+    }
     try { localStorage.removeItem(LS_KEY_PRINCIPALS); } catch (_) {}
     SB_STATE.principals = seedDefaultPrincipals();
     SB_STATE.openCards.clear();
@@ -4069,6 +4278,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     renderEditor();
     setStageIdle();
     renderSharedGrid();
+    // Re-probe to create a fresh backend session.
+    probeBackend();
   }
 
   /* ===================================================================
