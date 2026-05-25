@@ -734,22 +734,36 @@ button[disabled], .btn[disabled] {
   flex: 1;
 }
 
-.demo-section button {
+/* Scope these to the run-controls only — without :not(.scenarios-tabs button)
+   the generic .demo-section button rule overrides the scenarios-tabs styling
+   and (a) forces dark ink text on selected tabs (which already have a dark
+   background → unreadable), (b) paints the tab gold on hover which hides the
+   gold Roman numeral. The :not() also keeps the Request-meeting / Reset
+   buttons styled as before. */
+.demo-section .run-controls button {
   background: var(--paper);
   color: var(--ink);
   border-color: var(--paper);
 }
-.demo-section button:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
-.demo-section button.ghost {
+.demo-section .run-controls button:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.demo-section .run-controls button.ghost {
   background: transparent;
   color: var(--paper);
   border: 1px solid hsl(220 18% 30%);
 }
-.demo-section button.ghost:hover {
+.demo-section .run-controls button.ghost:hover {
   background: hsl(220 18% 14%);
   color: var(--gold);
   border-color: var(--gold);
 }
+
+/* Tab hover (only for unselected tabs — keeps the gold-on-hover Roman numeral
+   visible by switching the numeral color to ink when the gold hover state
+   takes over the background). */
+.scenarios-tabs button:not([aria-selected="true"]):hover { background: hsl(220 18% 14%); }
+.scenarios-tabs button:not([aria-selected="true"]):hover .n { color: var(--gold); }
+.scenarios-tabs button[aria-selected="true"]:hover .n,
+.scenarios-tabs button[aria-selected="true"]:focus .n { color: var(--gold); }
 
 /* Payload list on the right party — populated via DOM, not innerHTML */
 .payload-list {
