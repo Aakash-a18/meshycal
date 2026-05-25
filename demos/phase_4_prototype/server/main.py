@@ -10,9 +10,11 @@ Endpoints:
 * ``POST /scenarios/two-party/run`` — runs a real two-party Mesherra
   negotiation; returns structured payloads, hashes, and both ledgers'
   entries as a :class:`TwoPartyResult`.
-* ``GET  /scenarios/four-party/run`` — placeholder; returns 501 with a
-  ``not_yet_implemented`` body.
-* ``GET  /scenarios/cascading/run`` — placeholder; same shape.
+* ``POST /scenarios/four-party/run`` — runs a real four-party group-find
+  negotiation; returns a :class:`FourPartyResult`.
+* ``POST /scenarios/cascading/run`` — runs the three-principal cascading
+  reschedule (Iris→Marius, Marius↔Atlas reasoner-driven sub-exchange,
+  Marius→Iris); returns a :class:`CascadingResult`.
 
 Run locally:
 
@@ -32,6 +34,8 @@ from typing import AsyncIterator
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from .cascading import CascadingResult, run_cascading
+from .group_negotiation import FourPartyResult, run_four_party
 from .scenarios import NotYetImplemented, TwoPartyResult, run_two_party
 
 
@@ -74,36 +78,31 @@ async def run_two_party_endpoint() -> TwoPartyResult:
         ) from e
 
 
-@app.get(
+@app.post(
     "/scenarios/four-party/run",
-    response_model=NotYetImplemented,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    response_model=FourPartyResult,
 )
-async def run_four_party_endpoint() -> NotYetImplemented:
-    return NotYetImplemented(
-        scenario="four-party group find",
-        why=(
-            "Requires a coordinator pattern layered on top of Mesherra's "
-            "two-party primitive. Mesherra's policy + receipt machinery "
-            "applies per-bilateral with no change."
-        ),
-        estimate="3-5 days backend + 1-2 days UI",
-    )
+async def run_four_party_endpoint() -> FourPartyResult:
+    """Run a real Phase 3 four-party group-find negotiation."""
+    try:
+        return await run_four_party()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"four-party scenario failed: {e!r}",
+        ) from e
 
 
-@app.get(
+@app.post(
     "/scenarios/cascading/run",
-    response_model=NotYetImplemented,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    response_model=CascadingResult,
 )
-async def run_cascading_endpoint() -> NotYetImplemented:
-    return NotYetImplemented(
-        scenario="cascading reschedule",
-        why=(
-            "Requires an LLM-driven scheduling agent that reasons about "
-            "tradeoffs (\"can I move my meeting with C to free this slot?\"). "
-            "Requires a strategic call on real LLM API vs scripted "
-            "deterministic reasoner."
-        ),
-        estimate="1-2 weeks backend + 3-5 days UI",
-    )
+async def run_cascading_endpoint() -> CascadingResult:
+    """Run the three-principal cascading-reschedule scenario."""
+    try:
+        return await run_cascading()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"cascading scenario failed: {e!r}",
+        ) from e
