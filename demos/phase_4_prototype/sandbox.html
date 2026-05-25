@@ -461,6 +461,103 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .sb-add-principal-btn { margin-top: 18px; }
 
+/* Shared-meeting presets — single button adds the same event to every
+   principal's calendar at the same time. Lives at the bottom of the editor. */
+.sb-shared-meetings {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--rule);
+}
+.sb-shared-eyebrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 4px 8px;
+}
+.sb-shared-eyebrow .lbl {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.sb-shared-eyebrow .hint {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-mute);
+  letter-spacing: -0.005em;
+}
+.sb-shared-intro {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0 4px 12px;
+}
+.sb-shared-preset-btn {
+  width: 100%;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font-family: var(--body);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.sb-shared-preset-btn:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+  background: hsl(40 28% 90%);
+}
+.sb-shared-preset-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.sb-preset-title {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+  grid-column: 1;
+  grid-row: 1;
+  line-height: 1.1;
+}
+.sb-preset-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  grid-column: 1;
+  grid-row: 2;
+}
+.sb-preset-meta .blocking-tag {
+  color: var(--terracotta-deep);
+}
+.sb-preset-avatars {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  flex-shrink: 0;
+}
+.sb-preset-avatars .sb-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  margin-left: -6px;
+  border: 1.5px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--rule);
+  flex-shrink: 0;
+}
+
 /* Archetype auto-fill */
 .sb-archetype-row {
   display: grid;
@@ -982,6 +1079,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 .sb-grid-col {
   position: relative;
+  z-index: 1;       /* sits above the free-band overlay */
   border-left: 1px solid hsl(34 18% 82%);
   background-image:
     /* hour lines */
@@ -997,7 +1095,37 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       hsl(34 18% 88%) 27px 28px,
       transparent 28px 56px
     );
+  background-color: transparent;
   min-width: 0;
+}
+
+/* Common-availability bands — jade tint behind columns where ALL principals
+   are free for at least 30 min. */
+.sb-grid-cols { position: relative; }
+.sb-grid-free-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: hsl(155 32% 60% / 0.16);
+  border-top:    1px dashed hsl(155 35% 38% / 0.45);
+  border-bottom: 1px dashed hsl(155 35% 38% / 0.45);
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 3px 8px 0;
+}
+.sb-grid-free-band-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(155 38% 24%);
+  background: hsl(155 35% 90%);
+  padding: 1px 6px;
+  border: 1px solid hsl(155 30% 55%);
+  white-space: nowrap;
 }
 .sb-grid-col:first-child { border-left: none; }
 .sb-grid-col[data-active="true"] {
@@ -1781,6 +1909,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     </div>
     <div class="sb-editor-list" id="sb-editor-list"></div>
     <button type="button" class="sb-add-principal-btn" id="sb-add-principal-btn">+ add principal</button>
+
+    <div class="sb-shared-meetings" id="sb-shared-meetings"></div>
   </aside>
 
   <main class="sb-stage-pane">
@@ -1978,6 +2108,41 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     }
     persistSession();
     rerenderCard(p);
+  }
+
+  /* -----------------------------------------------------------------
+   *  Shared meetings — presets that add the same event to every
+   *  principal's calendar at once. The same time + title appearing
+   *  across columns is the visual story of "this is one meeting,
+   *  shared by all attendees".
+   * ----------------------------------------------------------------- */
+  const SHARED_MEETING_PRESETS = [
+    { key: "standup",       label: "Morning standup", time: "09:00", duration: 15, title: "team-standup",  isBlocking: false },
+    { key: "all-hands",     label: "All-hands",       time: "10:00", duration: 60, title: "all-hands",     isBlocking: false },
+    { key: "lunch",         label: "Shared lunch",    time: "12:00", duration: 45, title: "lunch",         isBlocking: false },
+    { key: "weekly-review", label: "Weekly review",   time: "15:00", duration: 60, title: "weekly-review", isBlocking: true  }
+  ];
+
+  function addSharedMeeting(preset) {
+    if (SB_STATE.principals.length < 2) return;
+    const names = SB_STATE.principals.map(p => p.displayName);
+    SB_STATE.principals.forEach(p => {
+      // Skip if this principal already has the same shared event
+      const dup = p.calendar.some(e => e.time === preset.time && e.title === preset.title);
+      if (dup) return;
+      // Cap at MAX_EVENTS per principal
+      if (p.calendar.length >= MAX_EVENTS) return;
+      const others = names.filter(n => n !== p.displayName).join(", ");
+      p.calendar.push({
+        time: preset.time,
+        duration: preset.duration,
+        title: preset.title,
+        attendees: others,
+        isBlocking: !!preset.isBlocking
+      });
+    });
+    persistSession();
+    renderEditor();
   }
 
   /* -----------------------------------------------------------------
@@ -2243,6 +2408,53 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     $("sb-editor-count").textContent = SB_STATE.principals.length + " of " + MAX_PRINCIPALS;
     $("sb-add-principal-btn").disabled = SB_STATE.principals.length >= MAX_PRINCIPALS;
     renderRequestSelects();
+    renderSharedMeetingsSection();
+  }
+
+  function renderSharedMeetingsSection() {
+    const root = $("sb-shared-meetings");
+    if (!root) return;
+    clearChildren(root);
+
+    const eyebrow = elem("div", { className: "sb-shared-eyebrow" });
+    eyebrow.appendChild(elem("span", { className: "lbl", text: "shared meetings" }));
+    eyebrow.appendChild(elem("span", { className: "hint", text: "add to every calendar" }));
+    root.appendChild(eyebrow);
+
+    root.appendChild(elem("p", {
+      className: "sb-shared-intro",
+      text: "Drops the same event onto every principal's calendar at the same time. You'll see them line up as aligned blocks across columns on the grid."
+    }));
+
+    SHARED_MEETING_PRESETS.forEach(preset => {
+      const btn = elem("button", { className: "sb-shared-preset-btn", attrs: { type: "button" } });
+      btn.appendChild(elem("div", { className: "sb-preset-title", text: preset.label }));
+
+      const meta = elem("div", { className: "sb-preset-meta" });
+      meta.appendChild(document.createTextNode(preset.time + " · " + preset.duration + " min"));
+      if (preset.isBlocking) {
+        meta.appendChild(document.createTextNode(" · "));
+        meta.appendChild(elem("span", { className: "blocking-tag", text: "hard block" }));
+      }
+      btn.appendChild(meta);
+
+      const avis = elem("div", { className: "sb-preset-avatars" });
+      SB_STATE.principals.forEach(p => {
+        avis.appendChild(elem("div", {
+          className: "sb-avatar sb-avatar--slot-" + p.colorSlot,
+          text: initialsOf(p.displayName),
+          attrs: { title: p.displayName }
+        }));
+      });
+      btn.appendChild(avis);
+
+      if (SB_STATE.principals.length < 2) {
+        btn.disabled = true;
+        btn.title = "need at least 2 principals";
+      }
+      btn.addEventListener("click", () => addSharedMeeting(preset));
+      root.appendChild(btn);
+    });
   }
 
   function renderPrincipalCard(p) {
@@ -3158,6 +3370,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     });
     body.appendChild(colsWrap);
     root.appendChild(body);
+
+    // Common-availability bands behind the columns
+    renderFreeBands();
   }
 
   function buildGridEvent(p, ev) {
@@ -3175,6 +3390,72 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     node.appendChild(elem("div", { className: "sb-grid-event-title", text: ev.title || "(untitled)" }));
     if (ev.attendees) node.appendChild(elem("div", { className: "sb-grid-event-attendees", text: ev.attendees }));
     return node;
+  }
+
+  /* -----------------------------------------------------------------
+   *  Common-availability bands: rows where ALL principals are free
+   *  for >= 30 minutes get a jade-tinted horizontal stripe behind
+   *  the columns. Computed in 15-minute steps.
+   * ----------------------------------------------------------------- */
+  function computeAllFreeWindows() {
+    const STEP = 15;
+    const totalMins = (GRID_END_HOUR - GRID_START_HOUR) * 60;
+    const steps = totalMins / STEP;
+
+    const intervals = SB_STATE.principals.map(p =>
+      (p.calendar || []).map(ev => {
+        const start = timeToMinutes(ev.time);
+        return { start, end: start + (parseInt(ev.duration, 10) || 30) };
+      })
+    );
+
+    const free = new Array(steps).fill(true);
+    for (let i = 0; i < steps; i++) {
+      const sMin = i * STEP, eMin = sMin + STEP;
+      for (let p = 0; p < intervals.length; p++) {
+        let busy = false;
+        for (const it of intervals[p]) {
+          if (it.start < eMin && it.end > sMin) { busy = true; break; }
+        }
+        if (busy) { free[i] = false; break; }
+      }
+    }
+
+    const windows = [];
+    let i = 0;
+    while (i < steps) {
+      if (free[i]) {
+        let j = i;
+        while (j < steps && free[j]) j++;
+        const startMin = i * STEP;
+        const durMin = (j - i) * STEP;
+        if (durMin >= 30) windows.push({ start: startMin, duration: durMin });
+        i = j;
+      } else {
+        i++;
+      }
+    }
+    return windows;
+  }
+
+  function renderFreeBands() {
+    const cols = $("sb-grid-cols");
+    if (!cols) return;
+    cols.querySelectorAll(".sb-grid-free-band").forEach(b => b.remove());
+    if (SB_STATE.principals.length < 2) return;
+    const windows = computeAllFreeWindows();
+    windows.forEach(w => {
+      const band = elem("div", { className: "sb-grid-free-band" });
+      band.style.top = (w.start / 60 * GRID_HOUR_PX) + "px";
+      band.style.height = (w.duration / 60 * GRID_HOUR_PX) + "px";
+      const startHourFloat = GRID_START_HOUR + (w.start / 60);
+      const startHH = Math.floor(startHourFloat);
+      const startMM = w.start % 60;
+      const label = pad2(startHH) + ":" + pad2(startMM) + " · everyone free · " + w.duration + " min";
+      band.appendChild(elem("div", { className: "sb-grid-free-band-label", text: label }));
+      band.title = label;
+      cols.insertBefore(band, cols.firstChild);
+    });
   }
 
   function gridHighlightColumns(principalIds, on) {
@@ -3414,11 +3695,21 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     const blockingEv = (recipient.calendar || []).find(e => e.isBlocking);
     let cascadePartner = null;
     if (blockingEv && blockingEv.attendees) {
-      const want = String(blockingEv.attendees).trim().toLowerCase();
-      cascadePartner = SB_STATE.principals.find(p =>
-        p.id !== sender.id && p.id !== recipient.id &&
-        (p.displayName.toLowerCase() === want || p.id.startsWith(want + "@"))
-      ) || null;
+      // attendees may be "Marius" or a comma-separated list like
+      // "Marius, Atlas" (shared-meeting events). Walk through each
+      // candidate and pick the first that matches a real principal.
+      const wants = String(blockingEv.attendees)
+        .toLowerCase()
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+      for (const want of wants) {
+        cascadePartner = SB_STATE.principals.find(p =>
+          p.id !== sender.id && p.id !== recipient.id &&
+          (p.displayName.toLowerCase() === want || p.id.startsWith(want + "@"))
+        ) || null;
+        if (cascadePartner) break;
+      }
     }
 
     const principalIds = cascadePartner
