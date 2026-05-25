@@ -1,0 +1,2834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MeshyCal — sandbox · R&amp;D mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" />
+<style>
+
+/* =========================================================================
+ *  Tokens — duplicated from index.html so sandbox.html stands alone.
+ * ========================================================================= */
+:root {
+  --paper:        hsl(40 32% 93%);
+  --paper-deep:   hsl(38 26% 87%);
+  --paper-dim:    hsl(34 18% 78%);
+  --ink:          hsl(222 28% 11%);
+  --ink-soft:     hsl(222 18% 28%);
+  --ink-mute:     hsl(222 10% 46%);
+  --rule:         hsl(34 14% 70%);
+
+  --terracotta:   hsl(13 60% 50%);
+  --terracotta-deep: hsl(10 55% 36%);
+  --jade:         hsl(155 30% 33%);
+  --jade-deep:    hsl(155 35% 24%);
+  --gold:         hsl(40 70% 53%);
+  --gold-deep:    hsl(35 65% 38%);
+
+  --slot-0-bg:    hsl(40 55% 68%);
+  --slot-1-bg:    hsl(155 30% 33%);
+  --slot-2-bg:    hsl(13 60% 50%);
+  --slot-3-bg:    hsl(240 25% 52%);
+  --slot-4-bg:    hsl(30 55% 42%);
+  --slot-5-bg:    hsl(270 20% 45%);
+
+  --display: "Fraunces", "EB Garamond", serif;
+  --body:    "Newsreader", "EB Garamond", Georgia, serif;
+  --mono:    "IBM Plex Mono", "Courier New", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "kern";
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 18% 30%, hsl(34 25% 60% / 0.045) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, hsl(15 30% 50% / 0.04) 0%, transparent 50%),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 3px,
+      hsl(34 20% 40% / 0.012) 3px 4px
+    );
+  mix-blend-mode: multiply;
+}
+
+a { color: var(--terracotta-deep); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* =========================================================================
+ *  Header bar
+ * ========================================================================= */
+.sb-header {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 32px 18px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+.sb-header-brand {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--ink);
+}
+.sb-header-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  justify-self: center;
+  text-align: center;
+}
+.sb-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sb-back-link {
+  color: var(--ink-soft);
+}
+.sb-session-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 5px 10px;
+  border: 1px solid hsl(40 20% 60%);
+  letter-spacing: 0.08em;
+  color: hsl(40 25% 38%);
+  text-transform: none;
+}
+.sb-reset-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.sb-reset-btn:hover { border-color: var(--terracotta); color: var(--terracotta-deep); }
+
+/* =========================================================================
+ *  Workspace (editor | stage)
+ * ========================================================================= */
+.sb-workspace {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+.sb-editor {
+  border-right: 1px solid var(--rule);
+  background: hsl(40 28% 91%);
+  padding: 18px 18px 96px;
+  overflow-y: auto;
+  max-height: calc(100vh - 64px);
+  position: sticky;
+  top: 0;
+}
+
+.sb-editor-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin: 4px 4px 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.sb-editor-eyebrow .count {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+
+.sb-editor-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================================
+ *  Principal card
+ * ========================================================================= */
+.sb-card {
+  border-bottom: 1px solid hsl(34 18% 76%);
+  padding: 14px 6px 14px;
+  position: relative;
+}
+.sb-card:first-child { border-top: 1px solid hsl(34 18% 76%); }
+
+.sb-card-head {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sb-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.sb-avatar--slot-0 { background: var(--slot-0-bg); color: var(--ink); }
+.sb-avatar--slot-1 { background: var(--slot-1-bg); color: var(--paper); }
+.sb-avatar--slot-2 { background: var(--slot-2-bg); color: var(--paper); }
+.sb-avatar--slot-3 { background: var(--slot-3-bg); color: var(--paper); }
+.sb-avatar--slot-4 { background: var(--slot-4-bg); color: var(--paper); }
+.sb-avatar--slot-5 { background: var(--slot-5-bg); color: var(--paper); }
+
+.sb-card-id {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sb-card-name {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-card-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.sb-reasoner-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  border: 1px solid var(--rule);
+  padding: 2px 6px;
+}
+.sb-reasoner-badge--anthropic { color: var(--terracotta-deep); border-color: var(--terracotta); }
+.sb-reasoner-badge--openai    { color: var(--jade-deep);       border-color: var(--jade); }
+.sb-reasoner-badge--compatible{ color: var(--gold-deep);       border-color: var(--gold); }
+
+.sb-card-event-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+}
+
+.sb-card-chevron {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-mute);
+  transition: transform 200ms ease;
+}
+.sb-card--open .sb-card-chevron { transform: rotate(90deg); color: var(--ink); }
+
+.sb-card-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 260ms ease;
+}
+.sb-card--open .sb-card-body { max-height: 2200px; }
+
+.sb-card-section {
+  margin-top: 16px;
+  border-top: 1px dashed hsl(34 18% 72%);
+  padding-top: 14px;
+}
+.sb-card-section-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.sb-card-section-eyebrow .hint {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--ink-mute);
+}
+
+/* Identity */
+.sb-name-input {
+  width: 100%;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 400;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed transparent;
+  padding: 2px 0 4px;
+  outline: none;
+  color: var(--ink);
+  transition: border-color 150ms ease;
+}
+.sb-name-input:hover  { border-bottom-color: hsl(34 18% 72%); }
+.sb-name-input:focus  { border-bottom-color: var(--ink-soft); }
+.sb-pid-row {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+.sb-delete-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terracotta-deep);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.sb-delete-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Inputs (shared) */
+.sb-card input[type="text"],
+.sb-card input[type="time"],
+.sb-card input[type="number"],
+.sb-card input[type="password"],
+.sb-card input[type="url"],
+.sb-card input[type="datetime-local"],
+.sb-card select {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  color: var(--ink);
+  padding: 5px 8px;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+.sb-card input:focus, .sb-card select:focus {
+  border-color: var(--ink-soft);
+}
+.sb-card input::placeholder { color: var(--ink-mute); font-style: italic; }
+
+/* Calendar editor */
+.sb-event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sb-event-row {
+  display: grid;
+  grid-template-columns: 60px 56px 1fr 16px;
+  gap: 6px;
+  align-items: center;
+  background: var(--paper);
+  padding: 5px 6px;
+  border: 1px solid hsl(34 18% 80%);
+}
+.sb-event-row input[type="text"]:nth-of-type(1) {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 12.5px;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+}
+.sb-event-attendees-row {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+.sb-event-attendees-row input {
+  width: 100%;
+  font-size: 10px;
+  border: none;
+  background: transparent;
+  color: var(--ink-mute);
+  padding: 2px 4px;
+}
+.sb-event-remove {
+  background: transparent;
+  border: none;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.sb-event-remove:hover { color: var(--terracotta-deep); }
+
+.sb-add-event-btn,
+.sb-add-principal-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px dashed var(--rule);
+  padding: 8px 10px;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+.sb-add-event-btn:hover,
+.sb-add-principal-btn:hover {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+  background: hsl(40 28% 88%);
+}
+.sb-add-event-btn:disabled,
+.sb-add-principal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sb-add-principal-btn { margin-top: 18px; }
+
+/* Policy editor */
+.sb-policy-block { display: grid; gap: 10px; }
+.sb-policy-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 4px;
+}
+.sb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 6px;
+  min-height: 30px;
+}
+.sb-tag-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: hsl(155 30% 33% / 0.14);
+  color: var(--jade-deep);
+  border: 1px solid hsl(155 30% 33% / 0.4);
+  padding: 2px 6px 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sb-tag-chip--block {
+  background: hsl(13 60% 50% / 0.12);
+  color: var(--terracotta-deep);
+  border-color: hsl(13 60% 50% / 0.5);
+}
+.sb-tag-chip-x {
+  font-size: 10px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+}
+.sb-tag-chip-x:hover { opacity: 1; }
+.sb-tag-input {
+  border: none;
+  background: transparent;
+  flex: 1;
+  min-width: 80px;
+  font-family: var(--mono);
+  font-size: 11px;
+  outline: none;
+  padding: 1px 2px;
+  color: var(--ink);
+}
+
+.sb-cascade-row {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Reasoner config */
+.sb-reasoner-grid { display: grid; gap: 10px; }
+.sb-field-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 4px;
+  display: block;
+}
+.sb-hidden { display: none !important; }
+.sb-apikey-warning {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.55;
+  color: hsl(13 45% 38%);
+  background: hsl(13 50% 50% / 0.06);
+  border-left: 2px solid hsl(13 50% 50% / 0.5);
+  padding: 6px 8px;
+  margin-top: 4px;
+}
+
+/* =========================================================================
+ *  Stage
+ * ========================================================================= */
+.sb-stage-pane {
+  padding: 24px 28px 80px;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Request form */
+.sb-request-form {
+  background: hsl(40 28% 91%);
+  border: 1px solid hsl(40 20% 78%);
+  padding: 18px 20px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 14px 18px;
+  margin-bottom: 24px;
+}
+.sb-req-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.sb-req-field--note { grid-column: 1 / span 3; }
+.sb-req-field input, .sb-req-field select {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 6px 8px;
+  outline: none;
+  color: var(--ink);
+  width: 100%;
+}
+.sb-req-field input:focus, .sb-req-field select:focus { border-color: var(--ink-soft); }
+.sb-req-field input::placeholder { color: var(--ink-mute); font-style: italic; }
+
+.sb-fire-row {
+  grid-column: 4;
+  grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+}
+.sb-fire-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 16px 12px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 150ms ease, color 150ms ease;
+}
+.sb-fire-btn:hover:not(:disabled) {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: var(--paper);
+}
+.sb-fire-btn:disabled {
+  background: hsl(34 14% 70%);
+  border-color: hsl(34 14% 70%);
+  color: hsl(40 20% 45%);
+  cursor: not-allowed;
+}
+.sb-fire-hint {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink-mute);
+  letter-spacing: 0.06em;
+  text-align: center;
+  min-height: 12px;
+}
+
+@media (max-width: 1280px) {
+  .sb-request-form { grid-template-columns: 1fr 1fr; }
+  .sb-fire-row { grid-column: auto; grid-row: auto; }
+  .sb-req-field--note { grid-column: 1 / -1; }
+}
+
+/* Idle stage */
+.sb-stage-idle {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 350;
+  color: var(--ink-mute);
+  text-align: center;
+  padding: 96px 40px;
+  border: 1px dashed var(--rule);
+  background: hsl(40 28% 91% / 0.4);
+}
+.sb-stage-idle .small {
+  display: block;
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--ink-mute);
+}
+
+/* Narrative band (mirrors .s3-narrative-band) */
+.sb-narrative-band {
+  background: hsl(40 28% 91%);
+  border: 1px solid hsl(40 20% 78%);
+  border-bottom: none;
+  padding: 20px 26px 18px;
+}
+.sb-nb-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(40 20% 52%);
+  margin-bottom: 10px;
+}
+.sb-nb-text {
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: hsl(222 28% 18%);
+  margin: 0;
+  font-style: italic;
+  transition: opacity 300ms ease;
+}
+.sb-nb-text--fading { opacity: 0; transition: opacity 200ms ease; }
+
+/* Principal columns (mirrors index.html .stage / .party / .calendar) */
+.sb-stage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: hsl(220 22% 8%);
+  border: 1px solid hsl(220 18% 22%);
+  min-height: 460px;
+  position: relative;
+}
+.sb-stage--3 { grid-template-columns: 1fr 1.6fr 1fr; }
+
+.sb-party {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  min-width: 0;
+}
+.sb-party + .sb-party { border-left: 1px solid hsl(220 18% 22%); }
+
+.sb-party .who { display: flex; align-items: center; gap: 12px; }
+.sb-party .who-name {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--paper);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-party .who-id {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: hsl(40 25% 60%);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-panel-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(40 20% 55%);
+  border-top: 1px solid hsl(220 18% 22%);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.sb-calendar {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: hsl(220 22% 6%);
+  border: 1px solid hsl(220 18% 18%);
+}
+.sb-cal-event {
+  padding: 9px 12px;
+  border-bottom: 1px solid hsl(220 18% 16%);
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  transition: background 250ms ease;
+  position: relative;
+}
+.sb-cal-event:last-child { border-bottom: none; }
+.sb-cal-event .time {
+  color: hsl(40 25% 70%);
+  letter-spacing: 0.04em;
+}
+.sb-cal-event .title {
+  color: var(--paper);
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 13px;
+}
+.sb-cal-event .attendees {
+  grid-column: 2;
+  color: hsl(40 20% 55%);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.sb-cal-event.blocking {
+  border-left: 3px solid var(--terracotta);
+  background: hsl(13 25% 11%);
+}
+.sb-cal-event.blocking .time  { color: var(--terracotta); }
+.sb-cal-event.blocking .title { color: hsl(13 50% 75%); }
+.sb-cal-event.booked {
+  background: hsl(220 22% 12%);
+  border-left: 3px solid var(--gold);
+}
+.sb-cal-event.booked .time  { color: var(--gold); }
+.sb-cal-event.booked .title { color: var(--paper); font-style: normal; font-weight: 500; }
+.sb-cal-event.booked .attendees { color: hsl(40 50% 65%); letter-spacing: 0.04em; }
+.sb-cal-event.booked::after {
+  content: "✓ SIGNED";
+  position: absolute;
+  right: 12px;
+  top: 9px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+}
+.sb-cal-empty {
+  padding: 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-style: italic;
+  color: hsl(40 20% 45%);
+  text-align: center;
+}
+.sb-slot-moving-out {
+  transition: opacity 400ms ease, background 400ms ease;
+  opacity: 0.15;
+  background: hsl(13 30% 16%);
+}
+.sb-slot-moving-out .title { text-decoration: line-through; }
+.sb-slot-moving-out .time  { color: hsl(13 40% 45%); }
+.sb-slot-appearing { opacity: 0; transition: opacity 500ms ease; }
+.sb-slot-appeared  { opacity: 1; border-left: 3px solid var(--jade); }
+
+/* Avatar slot tints inside stage */
+.sb-stage-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-style: italic; font-size: 20px; flex-shrink: 0; }
+.sb-stage-avatar--slot-0 { background: var(--slot-0-bg); color: var(--ink); }
+.sb-stage-avatar--slot-1 { background: var(--slot-1-bg); color: var(--paper); }
+.sb-stage-avatar--slot-2 { background: var(--slot-2-bg); color: var(--paper); }
+.sb-stage-avatar--slot-3 { background: var(--slot-3-bg); color: var(--paper); }
+.sb-stage-avatar--slot-4 { background: var(--slot-4-bg); color: var(--paper); }
+.sb-stage-avatar--slot-5 { background: var(--slot-5-bg); color: var(--paper); }
+
+/* Scoped payload panel */
+.sb-payload-panel {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: hsl(40 25% 65%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0;
+}
+.sb-pp-row { display: flex; gap: 12px; justify-content: space-between; }
+.sb-pp-k { color: hsl(40 20% 55%); }
+.sb-pp-v { color: hsl(40 35% 70%); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.sb-pp-blocked .sb-pp-k, .sb-pp-blocked .sb-pp-v { color: hsl(13 40% 50%); }
+.sb-pp-pending { color: hsl(40 15% 45%); font-style: italic; }
+.sb-pp-hash { font-size: 9.5px; color: hsl(40 15% 45%); margin-top: 4px; letter-spacing: 0.04em; }
+
+/* Reasoning trace */
+.sb-reasoning-trace {
+  border: 1px solid hsl(40 25% 28% / 0.6);
+  background: hsl(222 28% 9%);
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease, visibility 0s linear 400ms;
+  position: relative;
+}
+.sb-reasoning-trace::before {
+  content: "REASONING TRACE";
+  position: absolute;
+  top: -8px; left: 14px;
+  background: hsl(222 28% 9%);
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: hsl(40 25% 55%);
+}
+.sb-reasoning-trace--visible { visibility: visible; opacity: 1; transition: opacity 400ms ease; }
+
+.sb-trace-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sb-trace-eyebrow {
+  font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: hsl(40 25% 55%);
+}
+.sb-trace-spinner {
+  display: inline-block; width: 11px; height: 11px;
+  border: 1.5px solid hsl(40 70% 53% / 0.3); border-top-color: var(--gold);
+  border-radius: 50%; opacity: 0;
+}
+.sb-trace-spinner--active { opacity: 1; animation: sbSpin 800ms linear infinite; }
+@keyframes sbSpin { to { transform: rotate(360deg); } }
+
+.sb-trace-field {
+  display: flex; gap: 10px; margin: 3px 0;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.sb-trace-field--visible { opacity: 1; transform: translateY(0); }
+.sb-tf-key { color: hsl(40 20% 55%); width: 170px; flex-shrink: 0; font-size: 10.5px; }
+.sb-tf-val { color: hsl(40 60% 78%); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sb-trace-reason-label {
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: hsl(40 20% 50%);
+  margin-top: 10px;
+  margin-bottom: 6px;
+  border-top: 1px solid hsl(220 18% 22%);
+  padding-top: 8px;
+}
+.sb-trace-reason {
+  font-family: var(--mono); font-size: 10.5px; line-height: 1.65;
+  color: hsl(40 30% 72%);
+  white-space: pre-wrap; word-break: break-word;
+  margin: 0;
+}
+
+/* Arrows */
+.sb-arrows-layer {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 2; overflow: visible;
+}
+.sb-arrow {
+  stroke: var(--gold); stroke-width: 1.5; fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 200; stroke-dashoffset: 200;
+  opacity: 0;
+  transition: stroke-dashoffset 500ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+}
+.sb-arrow--active { stroke-dashoffset: 0; opacity: 0.85; }
+
+/* Exchange badges */
+.sb-exchange-badges { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.sb-exchange-badge {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 1px solid hsl(220 18% 24%);
+  background: hsl(220 22% 9%);
+  padding: 10px 12px;
+  opacity: 0; transform: translateY(8px) scale(0.96);
+}
+.sb-exchange-badge--entering { animation: sbBadgeEnter 600ms cubic-bezier(0.34, 1.4, 0.6, 1) forwards; }
+@keyframes sbBadgeEnter { to { opacity: 1; transform: translateY(0) scale(1); } }
+.sb-badge-svg { width: 48px; height: 66px; flex-shrink: 0; }
+.sb-badge-meta { font-family: var(--mono); font-size: 10px; line-height: 1.6; display: flex; flex-direction: column; gap: 2px; }
+.sb-badge-label { color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; font-weight: 500; }
+.sb-badge-principals { color: hsl(40 25% 65%); }
+.sb-badge-hash { color: hsl(40 15% 55%); font-size: 9.5px; }
+.sb-badge-hash .hash-val { color: hsl(40 30% 65%); }
+.sb-badge-taskid { color: hsl(155 30% 55%); font-size: 9px; letter-spacing: 0.1em; margin-top: 4px; }
+.sb-badge-svg .sb-badge-seam {
+  stroke: var(--gold); stroke-width: 1.5;
+  stroke-dasharray: 60; stroke-dashoffset: 60;
+  filter: drop-shadow(0 0 4px hsl(40 70% 55% / 0.5));
+}
+.sb-badge-svg--seam-active .sb-badge-seam {
+  transition: stroke-dashoffset 700ms ease 400ms;
+  stroke-dashoffset: 0;
+}
+
+/* Dialogue panel */
+.sb-dialogue-panel {
+  background: hsl(220 22% 7%);
+  border: 1px solid hsl(220 18% 22%);
+  border-top: none;
+}
+.sb-dp-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid hsl(220 18% 18%);
+}
+.sb-dp-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+}
+.sb-dp-hint { font-family: var(--mono); font-size: 10px; color: hsl(40 15% 40%); }
+.sb-dp-body { display: flex; flex-direction: column; gap: 0; padding: 6px 0; min-height: 40px; }
+
+.sb-dm {
+  display: flex; gap: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid hsl(220 18% 13%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 350ms ease, transform 350ms ease;
+}
+.sb-dm:last-child { border-bottom: none; }
+.sb-dm--visible { opacity: 1; transform: translateY(0); }
+
+.sb-dm-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: hsl(40 15% 45%);
+  letter-spacing: 0.06em;
+  width: 150px;
+  flex-shrink: 0;
+  padding-top: 2px;
+  line-height: 1.45;
+}
+.sb-dm-time { display: block; color: hsl(40 20% 38%); }
+.sb-dm-from { display: block; font-weight: 500; color: hsl(40 20% 55%); }
+.sb-dm-bubble {
+  flex: 1;
+  font-family: var(--body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: hsl(40 20% 78%);
+  padding-left: 16px;
+  border-left: 3px solid transparent;
+  font-style: italic;
+}
+.sb-dm-direction {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: block;
+  color: hsl(40 15% 45%);
+}
+.sb-dm-spinner {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border: 1.5px solid hsl(40 30% 35% / 0.4);
+  border-top-color: hsl(40 50% 52%);
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 8px;
+  animation: sbSpin 800ms linear infinite;
+}
+.sb-dm--thinking .sb-dm-bubble { color: hsl(40 15% 50%); font-style: italic; }
+.sb-dm--thinking .sb-dm-direction { color: hsl(40 12% 40%); }
+
+.sb-dm--slot-0 .sb-dm-bubble { border-left-color: hsl(40 55% 68%); }
+.sb-dm--slot-0 .sb-dm-direction { color: hsl(40 45% 60%); }
+.sb-dm--slot-1 .sb-dm-bubble { border-left-color: var(--jade); }
+.sb-dm--slot-1 .sb-dm-direction { color: hsl(155 30% 52%); }
+.sb-dm--slot-2 .sb-dm-bubble { border-left-color: var(--terracotta); }
+.sb-dm--slot-2 .sb-dm-direction { color: hsl(13 45% 58%); }
+.sb-dm--slot-3 .sb-dm-bubble { border-left-color: hsl(240 25% 62%); }
+.sb-dm--slot-3 .sb-dm-direction { color: hsl(240 20% 65%); }
+.sb-dm--slot-4 .sb-dm-bubble { border-left-color: hsl(30 55% 62%); }
+.sb-dm--slot-4 .sb-dm-direction { color: hsl(30 45% 58%); }
+.sb-dm--slot-5 .sb-dm-bubble { border-left-color: hsl(270 20% 55%); }
+.sb-dm--slot-5 .sb-dm-direction { color: hsl(270 18% 60%); }
+
+/* Tessera-fit overlay */
+.sb-fit-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, hsl(220 22% 6% / 0.92) 0%, hsl(220 22% 6% / 0.7) 100%);
+  z-index: 10;
+  pointer-events: none;
+}
+.sb-fit-overlay.active { display: flex; animation: sbFade 400ms ease forwards; }
+@keyframes sbFade { from { opacity: 0; } to { opacity: 1; } }
+.sb-fit-glyph { position: relative; width: 260px; height: 260px; }
+.sb-fit-verdict {
+  position: absolute;
+  bottom: 16%;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0;
+  animation: sbFadeLate 800ms ease 700ms forwards;
+}
+@keyframes sbFadeLate { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.sb-fit-half-l, .sb-fit-half-r {
+  position: absolute; top: 0; width: 50%; height: 100%;
+}
+.sb-fit-half-l { left: 0;  animation: sbSlideL 900ms cubic-bezier(0.34, 1.4, 0.6, 1) forwards; }
+.sb-fit-half-r { right: 0; animation: sbSlideR 900ms cubic-bezier(0.34, 1.4, 0.6, 1) forwards; }
+@keyframes sbSlideL { from { transform: translateX(-60%) rotate(-3deg); opacity: 0; } to { transform: translateX(0) rotate(0); opacity: 1; } }
+@keyframes sbSlideR { from { transform: translateX(60%) rotate(3deg); opacity: 0; }  to { transform: translateX(0) rotate(0); opacity: 1; } }
+.sb-fit-seam {
+  position: absolute;
+  left: 50%;
+  top: 12%; bottom: 12%;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--gold), var(--gold), transparent);
+  transform: translateX(-50%) scaleY(0);
+  transform-origin: center;
+  animation: sbSeam 700ms ease 800ms forwards;
+  box-shadow: 0 0 24px hsl(40 70% 55% / 0.6);
+}
+@keyframes sbSeam { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
+
+/* Step indicator */
+.sb-step-indicator {
+  display: flex;
+  gap: 0;
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(40 25% 55%);
+}
+.sb-step {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid hsl(220 18% 22%);
+  border-right: none;
+  background: hsl(220 22% 8%);
+  transition: all 300ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sb-step:last-child { border-right: 1px solid hsl(220 18% 22%); }
+.sb-step .n {
+  font-family: var(--display);
+  font-size: 17px;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: hsl(40 20% 45%);
+}
+.sb-step.active { background: hsl(220 22% 13%); color: var(--gold); }
+.sb-step.active .n { color: var(--gold); }
+.sb-step.done .n { color: var(--jade); }
+.sb-step.done    { color: hsl(155 25% 65%); }
+
+/* Status bar */
+.sb-status-bar {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: hsl(40 25% 38%);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Abort banner */
+.sb-abort-banner {
+  border: 1px solid var(--terracotta-deep);
+  background: hsl(13 40% 10%);
+  color: hsl(13 50% 70%);
+  font-family: var(--mono); font-size: 12px;
+  padding: 18px 22px; margin-top: 22px;
+  position: relative;
+  display: none;
+}
+.sb-abort-banner.sb-abort-visible { display: block; }
+.sb-abort-banner::before {
+  content: "RUN ABORTED";
+  display: block; font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--terracotta); margin-bottom: 10px;
+}
+.sb-abort-reason { line-height: 1.6; color: hsl(13 45% 65%); }
+.sb-abort-reset {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--terracotta-deep);
+  padding: 5px 10px;
+}
+
+/* Ledger blocks (paper, mirrors index.html) */
+.sb-ledger-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+.sb-ledger-block--3 { grid-template-columns: 1fr 1.4fr 1fr; }
+.sb-ledger-block > .sb-ledger { min-width: 0; }
+.sb-ledger {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 28px 26px 22px;
+  border: 1px solid var(--ink-soft);
+  position: relative;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  box-shadow:
+    0 1px 0 hsl(34 20% 50% / 0.2),
+    inset 0 0 0 1px hsl(40 30% 88%);
+}
+.sb-ledger::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 28px,
+    hsl(34 25% 72% / 0.18) 28px 29px
+  );
+  pointer-events: none;
+}
+.sb-ledger > * { position: relative; z-index: 1; }
+
+.sb-ledger-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+.sb-ledger-who {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 500;
+}
+.sb-ledger-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.sb-ledger-entry {
+  padding: 14px 0;
+  border-bottom: 1px solid hsl(34 18% 76%);
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  min-width: 0;
+}
+.sb-ledger-entry:last-child { border-bottom: none; }
+.sb-ledger-entry .seq {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-soft);
+  padding-top: 4px;
+}
+.sb-ledger-entry .body { font-size: 11px; line-height: 1.6; min-width: 0; overflow: hidden; }
+.sb-ledger-entry .body .row { display: block; }
+.sb-ledger-entry .body .k { color: var(--ink-mute); display: inline-block; width: 100px; }
+.sb-ledger-entry .body .v { color: var(--ink); }
+.sb-ledger-entry .body .v.emit    { color: var(--terracotta-deep); font-weight: 500; }
+.sb-ledger-entry .body .v.receive { color: var(--jade-deep);       font-weight: 500; }
+.sb-ledger-entry .body .hash {
+  color: var(--ink-mute);
+  font-size: 10px;
+  display: block;
+  margin-left: 100px;
+  margin-top: -1.55em;
+  word-break: break-all;
+}
+.sb-ledger-empty {
+  font-family: var(--display);
+  font-style: italic;
+  color: var(--ink-mute);
+  padding: 24px 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .sb-workspace { grid-template-columns: 1fr; }
+  .sb-editor {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+    max-height: none;
+  }
+  .sb-header { grid-template-columns: 1fr; gap: 8px; padding: 14px 18px; }
+  .sb-header-eyebrow { justify-self: start; }
+  .sb-header-nav { justify-self: start; flex-wrap: wrap; }
+  .sb-stage, .sb-stage--3 { grid-template-columns: 1fr; }
+  .sb-party + .sb-party { border-left: none; border-top: 1px solid hsl(220 18% 22%); }
+  .sb-ledger-block, .sb-ledger-block--3 { grid-template-columns: 1fr; }
+  .sb-ledger-entry .body .hash { margin-left: 0; margin-top: 2px; }
+  .sb-stage-pane { padding: 18px 16px 60px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="sb-header">
+  <div class="sb-header-brand">⌘ MESHYCAL  ·  SANDBOX</div>
+  <div class="sb-header-eyebrow">R&amp;D mode · session-scoped principals · API keys live in memory only</div>
+  <nav class="sb-header-nav">
+    <a href="index.html" class="sb-back-link">← demo</a>
+    <div id="sb-session-badge" class="sb-session-badge">checking…</div>
+    <button type="button" id="sb-reset-btn" class="sb-reset-btn">reset session</button>
+  </nav>
+</header>
+
+<div class="sb-workspace">
+
+  <aside class="sb-editor">
+    <div class="sb-editor-eyebrow">
+      <span>principals · this session</span>
+      <span class="count" id="sb-editor-count">—</span>
+    </div>
+    <div class="sb-editor-list" id="sb-editor-list"></div>
+    <button type="button" class="sb-add-principal-btn" id="sb-add-principal-btn">+ add principal</button>
+  </aside>
+
+  <main class="sb-stage-pane">
+
+    <form class="sb-request-form" id="sb-request-form" onsubmit="return false;">
+      <div class="sb-req-field">
+        <label class="sb-field-label" for="sb-req-sender">From</label>
+        <select id="sb-req-sender"></select>
+      </div>
+      <div class="sb-req-field">
+        <label class="sb-field-label" for="sb-req-recipient">To</label>
+        <select id="sb-req-recipient"></select>
+      </div>
+      <div class="sb-req-field">
+        <label class="sb-field-label" for="sb-req-duration">Duration (min)</label>
+        <input type="number" id="sb-req-duration" min="5" max="480" step="5" value="30" />
+      </div>
+      <div class="sb-fire-row">
+        <button type="button" id="sb-fire-btn" class="sb-fire-btn">Fire request</button>
+        <div id="sb-fire-hint" class="sb-fire-hint"></div>
+      </div>
+
+      <div class="sb-req-field">
+        <label class="sb-field-label" for="sb-req-earliest">Earliest start</label>
+        <input type="datetime-local" id="sb-req-earliest" />
+      </div>
+      <div class="sb-req-field">
+        <label class="sb-field-label" for="sb-req-latest">Latest end</label>
+        <input type="datetime-local" id="sb-req-latest" />
+      </div>
+
+      <div class="sb-req-field sb-req-field--note">
+        <label class="sb-field-label" for="sb-req-note">Context note (optional)</label>
+        <input type="text" id="sb-req-note" placeholder="what is this meeting about?" />
+      </div>
+    </form>
+
+    <div id="sb-stage-root">
+      <div id="sb-stage-idle" class="sb-stage-idle">
+        fire a request to begin
+        <span class="small">the run will appear here</span>
+      </div>
+    </div>
+
+    <div class="sb-step-indicator sb-hidden" id="sb-step-indicator"></div>
+    <div class="sb-status-bar sb-hidden" id="sb-status-bar">ready</div>
+
+    <div class="sb-abort-banner" id="sb-abort-banner">
+      <div class="sb-abort-reason" id="sb-abort-reason"></div>
+      <button type="button" class="sb-abort-reset" id="sb-abort-reset">reset stage</button>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ===================================================================
+   *  Constants
+   * =================================================================== */
+  const SB_API_BASE = (window.MESHYCAL_API_BASE || "http://127.0.0.1:8765").replace(/\/$/, "");
+  const SB_SANDBOX_API_BASE = (window.MESHYCAL_SANDBOX_API_BASE || SB_API_BASE).replace(/\/$/, "");
+
+  const MAX_PRINCIPALS = 6;
+  const MAX_EVENTS = 10;
+
+  const DEFAULT_OUTBOUND_ALLOW = ["candidates", "duration_minutes", "constraint_hints"];
+  const DEFAULT_OUTBOUND_BLOCK = ["calendar_titles", "attendee_emails"];
+  const DEFAULT_INBOUND_ALLOW  = ["candidates", "duration_minutes", "constraint_hints"];
+
+  /* ===================================================================
+   *  State
+   * =================================================================== */
+  const SB_STATE = {
+    sessionToken: null,
+    backendOk: false,
+    principals: [],
+    runInProgress: false,
+    apiKeys: {},
+    openCards: new Set()
+  };
+
+  /* ===================================================================
+   *  DOM helpers
+   * =================================================================== */
+  function $(id) { return document.getElementById(id); }
+  function clearChildren(el) { while (el && el.firstChild) el.removeChild(el.firstChild); }
+  function elem(tag, opts, ...children) {
+    opts = opts || {};
+    const e = document.createElement(tag);
+    if (opts.className) e.className = opts.className;
+    if (opts.text != null) e.textContent = opts.text;
+    if (opts.attrs) for (const k in opts.attrs) e.setAttribute(k, opts.attrs[k]);
+    if (opts.style) for (const k in opts.style) e.style[k] = opts.style[k];
+    for (const c of children) if (c != null) e.appendChild(c);
+    return e;
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function fakeHash(seed) {
+    const chars = "0123456789abcdef";
+    let h = "";
+    let s = seed;
+    for (let i = 0; i < 64; i++) {
+      s = (s * 31 + 17) % 4093;
+      h += chars[s % 16];
+    }
+    return h;
+  }
+
+  function slugify(s) {
+    return String(s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 24) || "principal";
+  }
+
+  function initialsOf(name) {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "·";
+    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function principalById(id) {
+    return SB_STATE.principals.find(p => p.id === id) || null;
+  }
+  function principalColorSlot(id) {
+    const p = principalById(id);
+    return p ? p.colorSlot : 0;
+  }
+  function principalShortName(id) {
+    const p = principalById(id);
+    return p ? p.displayName : id;
+  }
+
+  /* ===================================================================
+   *  Default seed
+   * =================================================================== */
+  function seedDefaultPrincipals() {
+    return [
+      {
+        id: "iris@sandbox.local",
+        displayName: "Iris",
+        colorSlot: 0,
+        calendar: [
+          { time: "09:00", duration: 60, title: "morning-standup", attendees: "team", isBlocking: false },
+          { time: "11:00", duration: 30, title: "focus-block",     attendees: "solo", isBlocking: false }
+        ],
+        policy: {
+          outboundAllow: DEFAULT_OUTBOUND_ALLOW.slice(),
+          outboundBlock: DEFAULT_OUTBOUND_BLOCK.slice(),
+          inboundAllow:  DEFAULT_INBOUND_ALLOW.slice(),
+          maxCascadeDepth: 1
+        },
+        reasoner: { provider: "scripted", model: "", baseUrl: "" }
+      },
+      {
+        id: "marius@sandbox.local",
+        displayName: "Marius",
+        colorSlot: 1,
+        calendar: [
+          { time: "10:00", duration: 60, title: "weekly-review", attendees: "team",  isBlocking: false },
+          { time: "14:00", duration: 45, title: "project-sync",  attendees: "atlas", isBlocking: true  },
+          { time: "15:30", duration: 30, title: "1-on-1",        attendees: "report", isBlocking: false }
+        ],
+        policy: {
+          outboundAllow: DEFAULT_OUTBOUND_ALLOW.slice(),
+          outboundBlock: DEFAULT_OUTBOUND_BLOCK.slice(),
+          inboundAllow:  DEFAULT_INBOUND_ALLOW.slice(),
+          maxCascadeDepth: 1
+        },
+        reasoner: { provider: "scripted", model: "", baseUrl: "" }
+      },
+      {
+        id: "atlas@sandbox.local",
+        displayName: "Atlas",
+        colorSlot: 2,
+        calendar: [
+          { time: "14:00", duration: 45, title: "project-sync", attendees: "marius", isBlocking: true }
+        ],
+        policy: {
+          outboundAllow: DEFAULT_OUTBOUND_ALLOW.slice(),
+          outboundBlock: DEFAULT_OUTBOUND_BLOCK.slice(),
+          inboundAllow:  DEFAULT_INBOUND_ALLOW.slice(),
+          maxCascadeDepth: 1
+        },
+        reasoner: { provider: "scripted", model: "", baseUrl: "" }
+      }
+    ];
+  }
+
+  function nextColorSlot() {
+    const used = SB_STATE.principals.map(p => p.colorSlot);
+    for (let i = 0; i < 6; i++) if (!used.includes(i)) return i;
+    return SB_STATE.principals.length % 6;
+  }
+
+  function nextPrincipalId() {
+    const taken = new Set(SB_STATE.principals.map(p => p.id));
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (let i = SB_STATE.principals.length; i < 26; i++) {
+      const letter = letters[i] || ("p" + i);
+      const id = "principal-" + letter.toLowerCase() + "@sandbox.local";
+      if (!taken.has(id)) return { id, displayName: "Principal " + letter };
+    }
+    return { id: "principal-x@sandbox.local", displayName: "Principal X" };
+  }
+
+  /* ===================================================================
+   *  Persistence
+   * =================================================================== */
+  const LS_KEY_PRINCIPALS = "sb_principals";
+
+  function persistSession() {
+    try {
+      const sanitized = SB_STATE.principals.map(p => ({
+        id: p.id,
+        displayName: p.displayName,
+        colorSlot: p.colorSlot,
+        calendar: p.calendar,
+        policy: p.policy,
+        reasoner: { provider: p.reasoner.provider, model: p.reasoner.model, baseUrl: p.reasoner.baseUrl }
+      }));
+      localStorage.setItem(LS_KEY_PRINCIPALS, JSON.stringify(sanitized));
+    } catch (_) {}
+  }
+
+  function hydrateSession() {
+    try {
+      const raw = localStorage.getItem(LS_KEY_PRINCIPALS);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return false;
+      SB_STATE.principals = parsed.map(p => ({
+        id: p.id,
+        displayName: p.displayName,
+        colorSlot: p.colorSlot || 0,
+        calendar: Array.isArray(p.calendar) ? p.calendar : [],
+        policy: p.policy || { outboundAllow: [], outboundBlock: [], inboundAllow: [], maxCascadeDepth: 1 },
+        reasoner: p.reasoner || { provider: "scripted", model: "", baseUrl: "" }
+      }));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /* ===================================================================
+   *  Backend probe
+   * =================================================================== */
+  async function probeBackend() {
+    const badge = $("sb-session-badge");
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 1500);
+      const res = await fetch(SB_API_BASE + "/healthz", { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) throw new Error("not-ok");
+      SB_STATE.backendOk = true;
+      badge.textContent = "● backend live · animation mode (no sandbox endpoints yet)";
+      badge.style.color = "hsl(155 30% 32%)";
+      badge.style.borderColor = "hsl(155 30% 50%)";
+    } catch (_) {
+      SB_STATE.backendOk = false;
+      badge.textContent = "○ backend offline · animation mode";
+      badge.style.color = "hsl(13 50% 38%)";
+      badge.style.borderColor = "hsl(13 50% 55%)";
+    }
+  }
+
+  /* ===================================================================
+   *  Editor — render principals
+   * =================================================================== */
+  function renderEditor() {
+    const list = $("sb-editor-list");
+    clearChildren(list);
+    SB_STATE.principals.forEach(p => list.appendChild(renderPrincipalCard(p)));
+    $("sb-editor-count").textContent = SB_STATE.principals.length + " of " + MAX_PRINCIPALS;
+    $("sb-add-principal-btn").disabled = SB_STATE.principals.length >= MAX_PRINCIPALS;
+    renderRequestSelects();
+  }
+
+  function renderPrincipalCard(p) {
+    const card = elem("div", {
+      className: "sb-card" + (SB_STATE.openCards.has(p.id) ? " sb-card--open" : ""),
+      attrs: { "data-pid": p.id }
+    });
+
+    // Head
+    const head = elem("div", { className: "sb-card-head" });
+    const avatar = elem("div", { className: "sb-avatar sb-avatar--slot-" + p.colorSlot, text: initialsOf(p.displayName) });
+    head.appendChild(avatar);
+
+    const idBlock = elem("div", { className: "sb-card-id" });
+    idBlock.appendChild(elem("div", { className: "sb-card-name", text: p.displayName }));
+    idBlock.appendChild(elem("div", { className: "sb-card-sub", text: p.id }));
+    head.appendChild(idBlock);
+
+    const meta = elem("div", { className: "sb-card-meta" });
+    meta.appendChild(reasonerBadge(p));
+    meta.appendChild(elem("div", { className: "sb-card-event-count", text: p.calendar.length + " evt" }));
+    head.appendChild(meta);
+
+    head.addEventListener("click", () => toggleCard(p.id));
+    card.appendChild(head);
+
+    // Body
+    const body = elem("div", { className: "sb-card-body" });
+    body.appendChild(renderIdentitySection(p));
+    body.appendChild(renderCalendarSection(p));
+    body.appendChild(renderPolicySection(p));
+    body.appendChild(renderReasonerSection(p));
+    card.appendChild(body);
+
+    return card;
+  }
+
+  function reasonerBadge(p) {
+    const cls = "sb-reasoner-badge sb-reasoner-badge--" + (p.reasoner.provider === "openai-compatible" ? "compatible" : p.reasoner.provider);
+    const label = p.reasoner.provider === "openai-compatible" ? "compatible" : p.reasoner.provider;
+    return elem("div", { className: cls, text: label });
+  }
+
+  function toggleCard(pid) {
+    if (SB_STATE.openCards.has(pid)) SB_STATE.openCards.delete(pid);
+    else SB_STATE.openCards.add(pid);
+    const card = document.querySelector('[data-pid="' + cssEscape(pid) + '"]');
+    if (card) card.classList.toggle("sb-card--open");
+  }
+
+  function cssEscape(s) {
+    if (window.CSS && CSS.escape) return CSS.escape(s);
+    return String(s).replace(/(["\\.@])/g, "\\$1");
+  }
+
+  /* -----------------------------------------------------------------
+   *  Identity section
+   * ----------------------------------------------------------------- */
+  function renderIdentitySection(p) {
+    const sec = elem("div", { className: "sb-card-section" });
+    sec.appendChild(elem("div", { className: "sb-card-section-eyebrow" },
+      elem("span", { text: "identity" }),
+      elem("span", { className: "hint", text: "synthetic only" })
+    ));
+
+    const nameInput = elem("input", { className: "sb-name-input", attrs: { type: "text", value: p.displayName, "aria-label": "display name" } });
+    nameInput.addEventListener("input", (e) => {
+      p.displayName = e.target.value;
+      const card = e.target.closest(".sb-card");
+      if (card) {
+        const nm = card.querySelector(".sb-card-name");
+        if (nm) nm.textContent = p.displayName;
+        const av = card.querySelector(".sb-avatar");
+        if (av) av.textContent = initialsOf(p.displayName);
+      }
+      renderRequestSelects();
+      persistSession();
+    });
+    sec.appendChild(nameInput);
+
+    sec.appendChild(elem("div", { className: "sb-pid-row", text: p.id }));
+
+    const delBtn = elem("button", { className: "sb-delete-link", attrs: { type: "button" }, text: "remove principal" });
+    delBtn.addEventListener("click", () => deletePrincipal(p.id));
+    sec.appendChild(delBtn);
+
+    return sec;
+  }
+
+  /* -----------------------------------------------------------------
+   *  Calendar section
+   * ----------------------------------------------------------------- */
+  function renderCalendarSection(p) {
+    const sec = elem("div", { className: "sb-card-section" });
+    sec.appendChild(elem("div", { className: "sb-card-section-eyebrow" },
+      elem("span", { text: "calendar" }),
+      elem("span", { className: "hint", text: p.calendar.length + " / " + MAX_EVENTS })
+    ));
+
+    const ul = elem("ul", { className: "sb-event-list" });
+    p.calendar.forEach((ev, idx) => ul.appendChild(renderEventRow(p, ev, idx)));
+    sec.appendChild(ul);
+
+    const addBtn = elem("button", { className: "sb-add-event-btn", attrs: { type: "button" }, text: "+ add event" });
+    if (p.calendar.length >= MAX_EVENTS) addBtn.disabled = true;
+    addBtn.addEventListener("click", () => {
+      if (p.calendar.length >= MAX_EVENTS) return;
+      p.calendar.push({ time: "13:00", duration: 30, title: "", attendees: "", isBlocking: false });
+      persistSession();
+      rerenderCard(p);
+    });
+    sec.appendChild(addBtn);
+
+    return sec;
+  }
+
+  function renderEventRow(p, ev, idx) {
+    const li = elem("li", { className: "sb-event-row" });
+
+    const time = elem("input", { attrs: { type: "time", value: ev.time, "aria-label": "time" } });
+    time.addEventListener("change", (e) => { ev.time = e.target.value; persistSession(); });
+    li.appendChild(time);
+
+    const dur = elem("input", { attrs: { type: "number", value: String(ev.duration), min: "5", max: "480", step: "5", "aria-label": "duration minutes" } });
+    dur.addEventListener("change", (e) => { ev.duration = parseInt(e.target.value, 10) || 30; persistSession(); });
+    li.appendChild(dur);
+
+    const title = elem("input", { attrs: { type: "text", value: ev.title, placeholder: "event title", "aria-label": "title" } });
+    title.addEventListener("input", (e) => { ev.title = e.target.value; persistSession(); });
+    li.appendChild(title);
+
+    const rm = elem("button", { className: "sb-event-remove", attrs: { type: "button", "aria-label": "remove event" }, text: "×" });
+    rm.addEventListener("click", () => {
+      p.calendar.splice(idx, 1);
+      persistSession();
+      rerenderCard(p);
+    });
+    li.appendChild(rm);
+
+    const attRow = elem("div", { className: "sb-event-attendees-row" });
+    const att = elem("input", { attrs: { type: "text", value: ev.attendees || "", placeholder: "attendees (comma-separated, synthetic)", "aria-label": "attendees" } });
+    att.addEventListener("input", (e) => { ev.attendees = e.target.value; persistSession(); });
+    attRow.appendChild(att);
+    li.appendChild(attRow);
+
+    return li;
+  }
+
+  function rerenderCard(p) {
+    const old = document.querySelector('[data-pid="' + cssEscape(p.id) + '"]');
+    if (!old) return;
+    const fresh = renderPrincipalCard(p);
+    old.replaceWith(fresh);
+  }
+
+  /* -----------------------------------------------------------------
+   *  Policy section
+   * ----------------------------------------------------------------- */
+  function renderPolicySection(p) {
+    const sec = elem("div", { className: "sb-card-section" });
+    sec.appendChild(elem("div", { className: "sb-card-section-eyebrow" },
+      elem("span", { text: "policy" }),
+      elem("span", { className: "hint", text: "meshycal.scheduling/proposal-v1" })
+    ));
+
+    const block = elem("div", { className: "sb-policy-block" });
+
+    block.appendChild(renderTagField(p, "outboundAllow", "outbound · allow", false));
+    block.appendChild(renderTagField(p, "outboundBlock", "outbound · block", true));
+    block.appendChild(renderTagField(p, "inboundAllow",  "inbound · allow",  false));
+
+    const cascadeRow = elem("div", { className: "sb-cascade-row" });
+    cascadeRow.appendChild(elem("div", { className: "sb-policy-label", text: "max cascade depth" }));
+    const sel = elem("select");
+    [0, 1, 2, 3].forEach(n => {
+      const opt = elem("option", { attrs: { value: String(n) }, text: String(n) });
+      if (p.policy.maxCascadeDepth === n) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener("change", (e) => { p.policy.maxCascadeDepth = parseInt(e.target.value, 10); persistSession(); });
+    cascadeRow.appendChild(sel);
+    block.appendChild(cascadeRow);
+
+    sec.appendChild(block);
+    return sec;
+  }
+
+  function renderTagField(p, field, label, blockStyle) {
+    const wrap = elem("div");
+    wrap.appendChild(elem("div", { className: "sb-policy-label", text: label }));
+    const tags = elem("div", { className: "sb-tags" });
+
+    p.policy[field].forEach((t, i) => tags.appendChild(renderTagChip(p, field, t, i, blockStyle)));
+
+    const input = elem("input", { className: "sb-tag-input", attrs: { type: "text", placeholder: "+ field name", "aria-label": label } });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const v = String(input.value || "").trim();
+        if (v && !p.policy[field].includes(v)) {
+          p.policy[field].push(v);
+          persistSession();
+          rerenderCard(p);
+        }
+      }
+    });
+    tags.appendChild(input);
+
+    wrap.appendChild(tags);
+    return wrap;
+  }
+
+  function renderTagChip(p, field, tag, idx, blockStyle) {
+    const chip = elem("span", { className: "sb-tag-chip" + (blockStyle ? " sb-tag-chip--block" : "") });
+    chip.appendChild(document.createTextNode(tag));
+    const x = elem("span", { className: "sb-tag-chip-x", text: "×", attrs: { "aria-label": "remove tag" } });
+    x.addEventListener("click", (e) => {
+      e.stopPropagation();
+      p.policy[field].splice(idx, 1);
+      persistSession();
+      rerenderCard(p);
+    });
+    chip.appendChild(x);
+    return chip;
+  }
+
+  /* -----------------------------------------------------------------
+   *  Reasoner section
+   * ----------------------------------------------------------------- */
+  function renderReasonerSection(p) {
+    const sec = elem("div", { className: "sb-card-section" });
+    sec.appendChild(elem("div", { className: "sb-card-section-eyebrow" },
+      elem("span", { text: "reasoner" }),
+      elem("span", { className: "hint", text: "who picks the slot" })
+    ));
+
+    const grid = elem("div", { className: "sb-reasoner-grid" });
+
+    // Provider
+    const providerLabel = elem("label", { className: "sb-field-label", text: "provider" });
+    grid.appendChild(providerLabel);
+    const provider = elem("select");
+    ["scripted", "anthropic", "openai", "openai-compatible"].forEach(opt => {
+      const o = elem("option", { attrs: { value: opt }, text: opt });
+      if (p.reasoner.provider === opt) o.selected = true;
+      provider.appendChild(o);
+    });
+    grid.appendChild(provider);
+
+    // Model name
+    const modelWrap = elem("div", { className: p.reasoner.provider === "scripted" ? "sb-hidden" : "" });
+    modelWrap.appendChild(elem("label", { className: "sb-field-label", text: "model" }));
+    const model = elem("input", { attrs: { type: "text", value: p.reasoner.model || "", placeholder: modelPlaceholder(p.reasoner.provider), "aria-label": "model" } });
+    modelWrap.appendChild(model);
+    grid.appendChild(modelWrap);
+
+    // API key
+    const apikeyWrap = elem("div", { className: p.reasoner.provider === "scripted" ? "sb-hidden" : "" });
+    apikeyWrap.appendChild(elem("label", { className: "sb-field-label", text: "API key" }));
+    const apikey = elem("input", { attrs: { type: "password", value: SB_STATE.apiKeys[p.id] || "", placeholder: "session only — never stored", "aria-label": "API key" } });
+    apikey.addEventListener("input", (e) => { SB_STATE.apiKeys[p.id] = e.target.value; });
+    apikeyWrap.appendChild(apikey);
+    apikeyWrap.appendChild(elem("div", { className: "sb-apikey-warning", text: "Lives in memory only. Sent only to the provider's API endpoint, never persisted. You'll re-enter it after a page refresh." }));
+    grid.appendChild(apikeyWrap);
+
+    // Base URL (openai-compatible only)
+    const baseWrap = elem("div", { className: p.reasoner.provider === "openai-compatible" ? "" : "sb-hidden" });
+    baseWrap.appendChild(elem("label", { className: "sb-field-label", text: "base URL" }));
+    const base = elem("input", { attrs: { type: "url", value: p.reasoner.baseUrl || "", placeholder: "https://api.example.com/v1", "aria-label": "base URL" } });
+    baseWrap.appendChild(base);
+    grid.appendChild(baseWrap);
+
+    // Wire provider changes after refs exist
+    provider.addEventListener("change", (e) => {
+      p.reasoner.provider = e.target.value;
+      model.placeholder = modelPlaceholder(p.reasoner.provider);
+      if (p.reasoner.provider === "scripted") {
+        modelWrap.classList.add("sb-hidden");
+        apikeyWrap.classList.add("sb-hidden");
+        baseWrap.classList.add("sb-hidden");
+        SB_STATE.apiKeys[p.id] = "";
+        apikey.value = "";
+      } else {
+        modelWrap.classList.remove("sb-hidden");
+        apikeyWrap.classList.remove("sb-hidden");
+        baseWrap.classList.toggle("sb-hidden", p.reasoner.provider !== "openai-compatible");
+      }
+      // Update badge
+      const card = e.target.closest(".sb-card");
+      if (card) {
+        const oldBadge = card.querySelector(".sb-reasoner-badge");
+        if (oldBadge) oldBadge.replaceWith(reasonerBadge(p));
+      }
+      persistSession();
+    });
+    model.addEventListener("input", (e) => { p.reasoner.model = e.target.value; persistSession(); });
+    base.addEventListener("input",  (e) => { p.reasoner.baseUrl = e.target.value; persistSession(); });
+
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  function modelPlaceholder(provider) {
+    if (provider === "anthropic") return "claude-sonnet-4-6";
+    if (provider === "openai") return "gpt-4o";
+    if (provider === "openai-compatible") return "model name";
+    return "";
+  }
+
+  /* -----------------------------------------------------------------
+   *  Add / delete principal
+   * ----------------------------------------------------------------- */
+  function addPrincipal() {
+    if (SB_STATE.principals.length >= MAX_PRINCIPALS) return;
+    const seed = nextPrincipalId();
+    SB_STATE.principals.push({
+      id: seed.id,
+      displayName: seed.displayName,
+      colorSlot: nextColorSlot(),
+      calendar: [],
+      policy: {
+        outboundAllow: DEFAULT_OUTBOUND_ALLOW.slice(),
+        outboundBlock: DEFAULT_OUTBOUND_BLOCK.slice(),
+        inboundAllow:  DEFAULT_INBOUND_ALLOW.slice(),
+        maxCascadeDepth: 1
+      },
+      reasoner: { provider: "scripted", model: "", baseUrl: "" }
+    });
+    SB_STATE.openCards.add(seed.id);
+    persistSession();
+    renderEditor();
+  }
+
+  function deletePrincipal(id) {
+    SB_STATE.principals = SB_STATE.principals.filter(p => p.id !== id);
+    SB_STATE.openCards.delete(id);
+    delete SB_STATE.apiKeys[id];
+    persistSession();
+    renderEditor();
+  }
+
+  /* ===================================================================
+   *  Request form
+   * =================================================================== */
+  function renderRequestSelects() {
+    const sender = $("sb-req-sender");
+    const recipient = $("sb-req-recipient");
+    const senderVal = sender.value;
+    const recipientVal = recipient.value;
+
+    clearChildren(sender);
+    clearChildren(recipient);
+
+    SB_STATE.principals.forEach((p, i) => {
+      const o1 = elem("option", { attrs: { value: p.id }, text: p.displayName });
+      const o2 = elem("option", { attrs: { value: p.id }, text: p.displayName });
+      sender.appendChild(o1);
+      recipient.appendChild(o2);
+    });
+
+    if (SB_STATE.principals.length >= 1) {
+      sender.value = SB_STATE.principals.some(p => p.id === senderVal) ? senderVal : SB_STATE.principals[0].id;
+    }
+    if (SB_STATE.principals.length >= 2) {
+      const altDefault = SB_STATE.principals.find(p => p.id !== sender.value);
+      recipient.value = SB_STATE.principals.some(p => p.id === recipientVal && p.id !== sender.value) ? recipientVal : (altDefault ? altDefault.id : "");
+    }
+    updateFireState();
+  }
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  function defaultDateTimes() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yyyy = tomorrow.getFullYear();
+    const mm = pad2(tomorrow.getMonth() + 1);
+    const dd = pad2(tomorrow.getDate());
+    return {
+      earliest: yyyy + "-" + mm + "-" + dd + "T09:00",
+      latest:   yyyy + "-" + mm + "-" + dd + "T18:00"
+    };
+  }
+
+  function hydrateRequestForm() {
+    const d = defaultDateTimes();
+    $("sb-req-earliest").value = d.earliest;
+    $("sb-req-latest").value   = d.latest;
+  }
+
+  function updateFireState() {
+    const fire = $("sb-fire-btn");
+    const hint = $("sb-fire-hint");
+    if (SB_STATE.runInProgress) {
+      fire.disabled = true; hint.textContent = "run in progress…"; return;
+    }
+    if (SB_STATE.principals.length < 2) {
+      fire.disabled = true; hint.textContent = "add at least 2 principals"; return;
+    }
+    const s = $("sb-req-sender").value;
+    const r = $("sb-req-recipient").value;
+    if (!s || !r) { fire.disabled = true; hint.textContent = "pick a sender and recipient"; return; }
+    if (s === r)  { fire.disabled = true; hint.textContent = "sender and recipient must differ"; return; }
+    fire.disabled = false;
+    hint.textContent = SB_STATE.principals.length >= 3 ? "supports 2-party · 3-party cascade" : "2-party run";
+  }
+
+  /* ===================================================================
+   *  Stage rendering
+   * =================================================================== */
+  function setStageIdle() {
+    const root = $("sb-stage-root");
+    clearChildren(root);
+    const idle = elem("div", { className: "sb-stage-idle", attrs: { id: "sb-stage-idle" } });
+    idle.appendChild(document.createTextNode("fire a request to begin"));
+    idle.appendChild(elem("span", { className: "small", text: "the run will appear here" }));
+    root.appendChild(idle);
+    $("sb-step-indicator").classList.add("sb-hidden");
+    $("sb-status-bar").classList.add("sb-hidden");
+    $("sb-abort-banner").classList.remove("sb-abort-visible");
+  }
+
+  function buildNarrativeBand() {
+    const band = elem("div", { className: "sb-narrative-band" });
+    band.appendChild(elem("div", { className: "sb-nb-eyebrow", text: "the run · narrated" }));
+    band.appendChild(elem("p", { className: "sb-nb-text", attrs: { id: "sb-nb-text" }, text: "preparing the lab…" }));
+    return band;
+  }
+
+  function buildStageGrid(principalIds) {
+    const isThree = principalIds.length === 3;
+    const stage = elem("div", { className: "sb-stage" + (isThree ? " sb-stage--3" : "") });
+
+    principalIds.forEach((pid, idx) => {
+      const p = principalById(pid);
+      if (!p) return;
+      const isPivot = isThree && idx === 1;
+      const col = elem("div", { className: "sb-party" });
+      col.dataset.pid = pid;
+
+      // Who
+      const who = elem("div", { className: "who" });
+      who.appendChild(elem("div", {
+        className: "sb-stage-avatar sb-stage-avatar--slot-" + p.colorSlot,
+        text: initialsOf(p.displayName)
+      }));
+      const whoTxt = elem("div");
+      whoTxt.appendChild(elem("div", { className: "who-name", text: p.displayName }));
+      whoTxt.appendChild(elem("div", { className: "who-id", text: p.id }));
+      who.appendChild(whoTxt);
+      col.appendChild(who);
+
+      // Calendar
+      col.appendChild(elem("div", { className: "sb-panel-label", text: "calendar" }));
+      const cal = elem("div", { className: "sb-calendar", attrs: { id: "sb-cal-" + slugify(pid) } });
+      if (p.calendar.length === 0) {
+        cal.appendChild(elem("div", { className: "sb-cal-empty", text: "— no events —" }));
+      } else {
+        p.calendar.forEach(ev => cal.appendChild(buildCalendarEvent(ev, pid)));
+      }
+      col.appendChild(cal);
+
+      // Payload panel (scoped disclosure visualization) — built lazily during run
+      const ppHost = elem("div", { className: "sb-panel-label sb-hidden", text: "scoped payload" });
+      ppHost.dataset.role = "pp-label";
+      col.appendChild(ppHost);
+      const pp = elem("div", { className: "sb-payload-panel sb-hidden", attrs: { id: "sb-pp-" + slugify(pid) } });
+      col.appendChild(pp);
+
+      // Reasoning trace (pivot only)
+      if (isPivot) {
+        const trace = elem("div", { className: "sb-reasoning-trace", attrs: { id: "sb-trace-" + slugify(pid) } });
+        const header = elem("div", { className: "sb-trace-header" });
+        header.appendChild(elem("span", { className: "sb-trace-eyebrow", text: "agent reasoning" }));
+        header.appendChild(elem("span", { className: "sb-trace-spinner sb-trace-spinner--active", attrs: { "aria-hidden": "true" } }));
+        trace.appendChild(header);
+        trace.appendChild(elem("div", { className: "sb-trace-fields", attrs: { id: "sb-trace-fields-" + slugify(pid) } }));
+        trace.appendChild(elem("div", { className: "sb-trace-reason-label", text: "reasoner verdict" }));
+        trace.appendChild(elem("pre", { className: "sb-trace-reason", attrs: { id: "sb-trace-reason-" + slugify(pid) }, text: "…" }));
+        col.appendChild(trace);
+      }
+
+      stage.appendChild(col);
+    });
+
+    // Arrows
+    const arrows = buildArrowsLayer(principalIds);
+    if (arrows) stage.appendChild(arrows);
+
+    // Tessera-fit overlay
+    stage.appendChild(buildFitOverlay());
+
+    return stage;
+  }
+
+  function buildCalendarEvent(ev, pid) {
+    const isBlocking = !!ev.isBlocking;
+    const cls = "sb-cal-event" + (isBlocking ? " blocking" : "");
+    const node = elem("div", { className: cls, attrs: { "data-slot": slotKey(pid, ev.time) } });
+    node.appendChild(elem("span", { className: "time", text: ev.time }));
+    const inner = elem("div");
+    inner.appendChild(elem("div", { className: "title", text: ev.title || "(untitled)" }));
+    if (ev.attendees) inner.appendChild(elem("div", { className: "attendees", text: ev.attendees }));
+    node.appendChild(inner);
+    return node;
+  }
+
+  function slotKey(pid, time) {
+    return slugify(pid) + "-" + String(time || "").replace(":", "");
+  }
+
+  function buildArrowsLayer(principalIds) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "sb-arrows-layer");
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("viewBox", "0 0 1000 600");
+
+    const defs = document.createElementNS(ns, "defs");
+    const marker = document.createElementNS(ns, "marker");
+    marker.setAttribute("id", "sb-arrowhead");
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+    marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
+    marker.setAttribute("orient", "auto");
+    const tri = document.createElementNS(ns, "path");
+    tri.setAttribute("d", "M0,0 L10,5 L0,10 Z");
+    tri.setAttribute("fill", "var(--gold)");
+    marker.appendChild(tri);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+
+    if (principalIds.length === 2) {
+      mkArrow(svg, ns, "sb-arrow-fwd",   "M 240 250 Q 500 200, 760 250");
+      mkArrow(svg, ns, "sb-arrow-back",  "M 760 380 Q 500 430, 240 380");
+    } else if (principalIds.length === 3) {
+      mkArrow(svg, ns, "sb-arrow-ab", "M 180 230 Q 380 180, 540 230");
+      mkArrow(svg, ns, "sb-arrow-bc", "M 540 230 Q 720 230, 880 260");
+      mkArrow(svg, ns, "sb-arrow-cb", "M 880 360 Q 720 370, 540 380");
+      mkArrow(svg, ns, "sb-arrow-ba", "M 540 380 Q 380 420, 180 380");
+    }
+
+    return svg;
+  }
+
+  function mkArrow(svg, ns, id, d) {
+    const p = document.createElementNS(ns, "path");
+    p.setAttribute("id", id);
+    p.setAttribute("class", "sb-arrow");
+    p.setAttribute("d", d);
+    p.setAttribute("marker-end", "url(#sb-arrowhead)");
+    svg.appendChild(p);
+  }
+
+  function activateArrow(id) {
+    const a = document.getElementById(id);
+    if (a) a.classList.add("sb-arrow--active");
+  }
+
+  function buildFitOverlay() {
+    const ov = elem("div", { className: "sb-fit-overlay", attrs: { id: "sb-fit-overlay" } });
+    const glyph = elem("div", { className: "sb-fit-glyph" });
+
+    const ns = "http://www.w3.org/2000/svg";
+    const svgL = document.createElementNS(ns, "svg");
+    svgL.setAttribute("class", "sb-fit-half-l");
+    svgL.setAttribute("viewBox", "0 0 130 280");
+    const pathL = document.createElementNS(ns, "path");
+    pathL.setAttribute("d", "M 128 6 C 110 14, 90 60, 80 110 L 80 160 L 70 200 L 86 232 L 76 256 L 84 274 L 128 278 L 128 6 Z");
+    pathL.setAttribute("fill", "#c8b89d");
+    svgL.appendChild(pathL);
+    glyph.appendChild(svgL);
+
+    const svgR = document.createElementNS(ns, "svg");
+    svgR.setAttribute("class", "sb-fit-half-r");
+    svgR.setAttribute("viewBox", "0 0 130 280");
+    const pathR = document.createElementNS(ns, "path");
+    pathR.setAttribute("d", "M 2 6 L 2 278 L 46 274 L 54 256 L 44 232 L 60 200 L 50 160 L 50 110 C 40 60, 20 14, 2 6 Z");
+    pathR.setAttribute("fill", "#b88467");
+    svgR.appendChild(pathR);
+    glyph.appendChild(svgR);
+
+    glyph.appendChild(elem("div", { className: "sb-fit-seam" }));
+    glyph.appendChild(elem("div", { className: "sb-fit-verdict", attrs: { id: "sb-fit-verdict" }, text: "tessera fit · trust verified" }));
+    ov.appendChild(glyph);
+    return ov;
+  }
+
+  function showTesseraFit(verdict) {
+    const ov = $("sb-fit-overlay");
+    const v = $("sb-fit-verdict");
+    if (!ov) return;
+    if (v && verdict) v.textContent = verdict;
+    ov.classList.add("active");
+  }
+
+  function hideTesseraFit() {
+    const ov = $("sb-fit-overlay");
+    if (ov) ov.classList.remove("active");
+  }
+
+  /* ===================================================================
+   *  Dialogue panel
+   * =================================================================== */
+  function buildDialoguePanel() {
+    const panel = elem("div", { className: "sb-dialogue-panel" });
+    const header = elem("div", { className: "sb-dp-header" });
+    header.appendChild(elem("span", { className: "sb-dp-eyebrow", text: "agent dialogue · live" }));
+    header.appendChild(elem("span", { className: "sb-dp-hint", text: "left-rail color = sending agent" }));
+    panel.appendChild(header);
+    panel.appendChild(elem("div", { className: "sb-dp-body", attrs: { id: "sb-dp-body" } }));
+    return panel;
+  }
+
+  function dialogueAppend(principalId, fromLabel, directionLabel, bodyText, showSpinner) {
+    const body = $("sb-dp-body");
+    if (!body) return null;
+
+    const slot = principalColorSlot(principalId);
+    const row = elem("div", { className: "sb-dm sb-dm--slot-" + slot });
+
+    const meta = elem("div", { className: "sb-dm-meta" });
+    const now = new Date();
+    const hh = pad2(now.getHours()), mm = pad2(now.getMinutes()), ss = pad2(now.getSeconds());
+    meta.appendChild(elem("span", { className: "sb-dm-time", text: hh + ":" + mm + ":" + ss }));
+    meta.appendChild(elem("span", { className: "sb-dm-from", text: fromLabel }));
+    row.appendChild(meta);
+
+    const bubble = elem("div", { className: "sb-dm-bubble" });
+    bubble.appendChild(elem("span", { className: "sb-dm-direction", text: directionLabel }));
+    bubble.appendChild(document.createTextNode(bodyText));
+
+    if (showSpinner) {
+      const spin = document.createElement("span");
+      spin.className = "sb-dm-spinner";
+      spin.setAttribute("aria-hidden", "true");
+      bubble.appendChild(spin);
+    }
+
+    row.appendChild(bubble);
+    body.appendChild(row);
+    requestAnimationFrame(() => requestAnimationFrame(() => row.classList.add("sb-dm--visible")));
+    return row;
+  }
+
+  function dialogueThinking(principalId, fromLabel, directionLabel, bodyText) {
+    const body = $("sb-dp-body");
+    if (!body) return null;
+
+    const row = elem("div", { className: "sb-dm sb-dm--slot-" + principalColorSlot(principalId) + " sb-dm--thinking" });
+    const meta = elem("div", { className: "sb-dm-meta" });
+    const now = new Date();
+    meta.appendChild(elem("span", { className: "sb-dm-time", text: pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + ":" + pad2(now.getSeconds()) }));
+    meta.appendChild(elem("span", { className: "sb-dm-from", text: fromLabel }));
+    row.appendChild(meta);
+
+    const bubble = elem("div", { className: "sb-dm-bubble" });
+    bubble.appendChild(elem("span", { className: "sb-dm-direction", text: directionLabel }));
+    bubble.appendChild(document.createTextNode(bodyText));
+    const spin = document.createElement("span");
+    spin.className = "sb-dm-spinner";
+    spin.setAttribute("aria-hidden", "true");
+    bubble.appendChild(spin);
+
+    row.appendChild(bubble);
+    body.appendChild(row);
+    requestAnimationFrame(() => requestAnimationFrame(() => row.classList.add("sb-dm--visible")));
+    return row;
+  }
+
+  /* ===================================================================
+   *  Exchange badges
+   * =================================================================== */
+  function buildExchangeBadgesHost() {
+    return elem("div", { className: "sb-exchange-badges", attrs: { id: "sb-exchange-badges" } });
+  }
+
+  function appendExchangeBadge(label, initLabel, respLabel, propHash, acptHash, taskIdLabel) {
+    const host = $("sb-exchange-badges");
+    if (!host) return;
+
+    const badge = elem("div", { className: "sb-exchange-badge" });
+
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 52 72");
+    svg.setAttribute("class", "sb-badge-svg");
+    const pL = document.createElementNS(ns, "path");
+    pL.setAttribute("d", "M 26 2 C 22 4, 19 12, 18 22 L 18 36 L 16 44 L 19 52 L 17 60 L 18 68 L 26 70 L 26 2 Z");
+    pL.setAttribute("fill", "#c8b89d");
+    const pR = document.createElementNS(ns, "path");
+    pR.setAttribute("d", "M 26 2 L 26 70 L 34 68 L 35 60 L 33 52 L 36 44 L 34 36 L 34 22 C 33 12, 30 4, 26 2 Z");
+    pR.setAttribute("fill", "#b88467");
+    const seam = document.createElementNS(ns, "line");
+    seam.setAttribute("x1", "26"); seam.setAttribute("y1", "8");
+    seam.setAttribute("x2", "26"); seam.setAttribute("y2", "64");
+    seam.setAttribute("class", "sb-badge-seam");
+    svg.appendChild(pL); svg.appendChild(pR); svg.appendChild(seam);
+
+    const meta = elem("div", { className: "sb-badge-meta" });
+    meta.appendChild(elem("div", { className: "sb-badge-label", text: "Exchange " + label }));
+    meta.appendChild(elem("div", { className: "sb-badge-principals", text: initLabel + " · " + respLabel }));
+
+    const ph = elem("div", { className: "sb-badge-hash" });
+    ph.appendChild(document.createTextNode("prop: "));
+    ph.appendChild(elem("span", { className: "hash-val", text: String(propHash).slice(0, 12) + "…" }));
+    meta.appendChild(ph);
+
+    const ah = elem("div", { className: "sb-badge-hash" });
+    ah.appendChild(document.createTextNode("acpt: "));
+    ah.appendChild(elem("span", { className: "hash-val", text: String(acptHash).slice(0, 12) + "…" }));
+    meta.appendChild(ah);
+
+    meta.appendChild(elem("div", { className: "sb-badge-taskid", text: taskIdLabel }));
+
+    badge.appendChild(svg);
+    badge.appendChild(meta);
+    host.appendChild(badge);
+
+    requestAnimationFrame(() => badge.classList.add("sb-exchange-badge--entering"));
+    setTimeout(() => svg.classList.add("sb-badge-svg--seam-active"), 600);
+  }
+
+  /* ===================================================================
+   *  Calendar deltas
+   * =================================================================== */
+  function moveSlot(pid, time) {
+    const key = slotKey(pid, time);
+    const slot = document.querySelector('[data-slot="' + cssEscape(key) + '"]');
+    if (!slot) return;
+    slot.classList.add("sb-slot-moving-out");
+    setTimeout(() => { if (slot.parentNode) slot.parentNode.removeChild(slot); }, 400);
+  }
+
+  function gainSlot(pid, time, title, attendees) {
+    const cal = document.getElementById("sb-cal-" + slugify(pid));
+    if (!cal) return;
+    // Remove any "no events" placeholder
+    const empty = cal.querySelector(".sb-cal-empty");
+    if (empty) empty.remove();
+
+    const node = elem("div", { className: "sb-cal-event sb-slot-appearing booked", attrs: { "data-slot": slotKey(pid, time) } });
+    node.appendChild(elem("span", { className: "time", text: time }));
+    const inner = elem("div");
+    inner.appendChild(elem("div", { className: "title", text: title }));
+    if (attendees) inner.appendChild(elem("div", { className: "attendees", text: attendees }));
+    node.appendChild(inner);
+    cal.appendChild(node);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      node.classList.remove("sb-slot-appearing");
+      node.classList.add("sb-slot-appeared");
+    }));
+  }
+
+  /* ===================================================================
+   *  Payload-panel (scoped disclosure visualization)
+   * =================================================================== */
+  function revealScopedPayload(pid, allow, block, hash) {
+    const pp = document.getElementById("sb-pp-" + slugify(pid));
+    if (!pp) return;
+    const lbl = document.querySelector('[data-pid="' + cssEscape(pid) + '"] [data-role="pp-label"]');
+    if (lbl) lbl.classList.remove("sb-hidden");
+    pp.classList.remove("sb-hidden");
+    clearChildren(pp);
+
+    allow.forEach(k => {
+      const row = elem("div", { className: "sb-pp-row" });
+      row.appendChild(elem("span", { className: "sb-pp-k", text: k }));
+      row.appendChild(elem("span", { className: "sb-pp-v", text: prettyAllowValue(k) }));
+      pp.appendChild(row);
+    });
+    block.forEach(k => {
+      const row = elem("div", { className: "sb-pp-row sb-pp-blocked" });
+      row.appendChild(elem("span", { className: "sb-pp-k", text: k }));
+      row.appendChild(elem("span", { className: "sb-pp-v", text: "— blocked —" }));
+      pp.appendChild(row);
+    });
+    pp.appendChild(elem("div", { className: "sb-pp-hash", text: "scoped hash · " + String(hash || "").slice(0, 16) + "…" }));
+  }
+
+  function prettyAllowValue(k) {
+    if (k === "candidates") return "3 slots";
+    if (k === "duration_minutes") return "30";
+    if (k === "constraint_hints") return "{ tz: \"Europe/Lisbon\" }";
+    return "(scoped)";
+  }
+
+  /* ===================================================================
+   *  Reasoning trace (pivot)
+   * =================================================================== */
+  function showReasoningTrace(pid, trace) {
+    const panel = document.getElementById("sb-trace-" + slugify(pid));
+    const fields = document.getElementById("sb-trace-fields-" + slugify(pid));
+    const reason = document.getElementById("sb-trace-reason-" + slugify(pid));
+    if (!panel || !fields || !reason) return;
+    panel.classList.add("sb-reasoning-trace--visible");
+
+    function appendField(k, v, delay) {
+      const row = elem("div", { className: "sb-trace-field" });
+      row.appendChild(elem("span", { className: "sb-tf-key", text: k }));
+      row.appendChild(elem("span", { className: "sb-tf-val", text: v }));
+      fields.appendChild(row);
+      setTimeout(() => row.classList.add("sb-trace-field--visible"), delay);
+    }
+
+    appendField("requested_slot",          trace.requestedSlot,        0);
+    appendField("blocking_event_title",    trace.blockingEventTitle,   220);
+    appendField("blocking_event_attendee", trace.blockingEventAttendee,440);
+    appendField("proposed_new_slot",       trace.proposedNewSlot,      660);
+    setTimeout(() => { reason.textContent = trace.reason; }, 880);
+  }
+
+  function stopReasoningSpinner(pid) {
+    const panel = document.getElementById("sb-trace-" + slugify(pid));
+    if (!panel) return;
+    const sp = panel.querySelector(".sb-trace-spinner");
+    if (sp) sp.classList.remove("sb-trace-spinner--active");
+    const eb = panel.querySelector(".sb-trace-eyebrow");
+    if (eb) eb.textContent = "agent reasoning — complete";
+  }
+
+  /* ===================================================================
+   *  Step indicator + status
+   * =================================================================== */
+  function buildSteps(labels) {
+    const ind = $("sb-step-indicator");
+    clearChildren(ind);
+    labels.forEach((lbl, i) => {
+      const s = elem("div", { className: "sb-step", attrs: { "data-step": String(i + 1) } });
+      s.appendChild(elem("span", { className: "n", text: toRoman(i + 1) }));
+      s.appendChild(elem("span", { className: "lbl", text: lbl }));
+      ind.appendChild(s);
+    });
+    ind.classList.remove("sb-hidden");
+  }
+
+  function setStep(n) {
+    document.querySelectorAll(".sb-step").forEach(el => {
+      const s = parseInt(el.dataset.step, 10);
+      el.classList.toggle("active", s === n);
+      el.classList.toggle("done",   s < n);
+    });
+  }
+
+  function setStatus(msg) {
+    const bar = $("sb-status-bar");
+    bar.classList.remove("sb-hidden");
+    bar.textContent = msg;
+  }
+
+  function toRoman(n) {
+    const r = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+    return r[n] || String(n);
+  }
+
+  /* ===================================================================
+   *  Narrative band
+   * =================================================================== */
+  function narrativeBeat(text) {
+    const el = $("sb-nb-text");
+    if (!el) return;
+    el.classList.add("sb-nb-text--fading");
+    setTimeout(() => { el.textContent = text; el.classList.remove("sb-nb-text--fading"); }, 200);
+  }
+
+  /* ===================================================================
+   *  Ledger blocks
+   * =================================================================== */
+  function buildLedgerBlock(principalIds) {
+    const isThree = principalIds.length === 3;
+    const block = elem("div", { className: "sb-ledger-block" + (isThree ? " sb-ledger-block--3" : "") });
+    principalIds.forEach(pid => {
+      const p = principalById(pid);
+      if (!p) return;
+      const led = elem("div", { className: "sb-ledger", attrs: { id: "sb-ledger-" + slugify(pid) } });
+      const head = elem("div", { className: "sb-ledger-head" });
+      head.appendChild(elem("span", { className: "sb-ledger-who", text: p.displayName }));
+      head.appendChild(elem("span", { className: "sb-ledger-label", text: "residue" }));
+      led.appendChild(head);
+      const empty = elem("div", { className: "sb-ledger-empty", text: "— awaiting first entry —" });
+      led.appendChild(empty);
+      block.appendChild(led);
+    });
+    return block;
+  }
+
+  function appendLedgerEntry(pid, { seq, ts, action, op, actor, counterpart, hash }) {
+    const led = document.getElementById("sb-ledger-" + slugify(pid));
+    if (!led) return;
+    const empty = led.querySelector(".sb-ledger-empty");
+    if (empty) empty.remove();
+
+    const entry = elem("div", { className: "sb-ledger-entry" });
+    entry.appendChild(elem("span", { className: "seq", text: String(seq).padStart(2, "0") + "." }));
+    const body = elem("div", { className: "body" });
+
+    function row(k, v, vClass) {
+      const r = elem("div", { className: "row" });
+      r.appendChild(elem("span", { className: "k", text: k }));
+      r.appendChild(elem("span", { className: "v" + (vClass ? " " + vClass : ""), text: v }));
+      return r;
+    }
+    body.appendChild(row("action_type", action, action === "emit" ? "emit" : "receive"));
+    body.appendChild(row("operation", op));
+    body.appendChild(row("actor", actor));
+    body.appendChild(row("counterpart", counterpart));
+    body.appendChild(row("timestamp", ts));
+    body.appendChild(row("payload_hash", hash, "hash"));
+    entry.appendChild(body);
+    led.appendChild(entry);
+  }
+
+  /* ===================================================================
+   *  Fire request — animation mode
+   * =================================================================== */
+  async function fireRequest() {
+    if (SB_STATE.runInProgress) return;
+    SB_STATE.runInProgress = true;
+    updateFireState();
+
+    const senderId    = $("sb-req-sender").value;
+    const recipientId = $("sb-req-recipient").value;
+    const duration    = parseInt($("sb-req-duration").value, 10) || 30;
+    const note        = $("sb-req-note").value || "";
+
+    // Topology decision: if recipient has a "blocking" event in their calendar
+    // AND there's a third principal who is also an attendee of that event,
+    // we run a 3-party cascade. Otherwise a 2-party run.
+    const recipient = principalById(recipientId);
+    const sender    = principalById(senderId);
+    if (!sender || !recipient) {
+      SB_STATE.runInProgress = false; updateFireState(); return;
+    }
+
+    const blockingEv = (recipient.calendar || []).find(e => e.isBlocking);
+    let cascadePartner = null;
+    if (blockingEv && blockingEv.attendees) {
+      const want = String(blockingEv.attendees).trim().toLowerCase();
+      cascadePartner = SB_STATE.principals.find(p =>
+        p.id !== sender.id && p.id !== recipient.id &&
+        (p.displayName.toLowerCase() === want || p.id.startsWith(want + "@"))
+      ) || null;
+    }
+
+    const principalIds = cascadePartner
+      ? [sender.id, recipient.id, cascadePartner.id]
+      : [sender.id, recipient.id];
+
+    try {
+      if (cascadePartner) {
+        await runThreeParty(sender, recipient, cascadePartner, duration);
+      } else {
+        await runTwoParty(sender, recipient, duration);
+      }
+    } catch (err) {
+      renderAbort(err && err.message ? err.message : "Unknown error.");
+    } finally {
+      SB_STATE.runInProgress = false;
+      updateFireState();
+    }
+  }
+
+  /* ===================================================================
+   *  Two-party choreography
+   * =================================================================== */
+  async function runTwoParty(sender, recipient, duration) {
+    const root = $("sb-stage-root");
+    clearChildren(root);
+
+    const principalIds = [sender.id, recipient.id];
+    root.appendChild(buildNarrativeBand());
+    root.appendChild(buildStageGrid(principalIds));
+    root.appendChild(buildExchangeBadgesHost());
+    root.appendChild(buildDialoguePanel());
+    root.appendChild(buildLedgerBlock(principalIds));
+
+    buildSteps(["build", "scope", "cross", "match", "seal", "fit", "update"]);
+    setStatus("two-party run · " + sender.displayName + " → " + recipient.displayName);
+    $("sb-abort-banner").classList.remove("sb-abort-visible");
+    hideTesseraFit();
+
+    // Hashes
+    const h = {
+      propEmit:  fakeHash(11 + (sender.colorSlot+1) * 17),
+      propRecv:  fakeHash(13 + (recipient.colorSlot+1) * 19),
+      acptEmit:  fakeHash(23 + (recipient.colorSlot+1) * 29),
+      acptRecv:  fakeHash(29 + (sender.colorSlot+1) * 31),
+      richScope: fakeHash(41 + duration),
+    };
+    const taskId = "task_" + fakeHash(7).slice(0, 12);
+
+    // Step I — build
+    setStep(1);
+    narrativeBeat(sender.displayName + " asks their agent for a meeting with " + recipient.displayName + ". The agent builds a proposal — rich on its side, scoped before it leaves.");
+    dialogueThinking(sender.id, sender.displayName + " · agent", "intent",
+      "Find a " + duration + "-min slot with " + recipient.displayName + ". Builds proposal_v1: candidates, durations, blocked fields stripped per policy.");
+    await sleep(1100);
+
+    // Step II — scope
+    setStep(2);
+    narrativeBeat("Policy is enforced before the wire: " + sender.displayName + "'s rich payload narrows to a scoped projection. The full version stays home.");
+    revealScopedPayload(sender.id, sender.policy.outboundAllow, sender.policy.outboundBlock, h.richScope);
+    await sleep(900);
+
+    // Step III — cross
+    setStep(3);
+    activateArrow("sb-arrow-fwd");
+    narrativeBeat("The scoped payload crosses the wire. " + recipient.displayName + " receives only what " + sender.displayName + "'s policy permitted.");
+    dialogueAppend(sender.id, sender.displayName + " · agent", "→ proposal_v1",
+      "candidates: 3 slots · duration: " + duration + " min · constraint_hints: { tz: \"Europe/Lisbon\" }. Titles + attendees not enclosed.", false);
+    await sleep(900);
+    revealScopedPayload(recipient.id, recipient.policy.inboundAllow, [], h.propRecv);
+    await sleep(700);
+
+    // Step IV — match
+    setStep(4);
+    narrativeBeat(recipient.displayName + "'s agent scans the candidates, picks the slot that fits.");
+    dialogueAppend(recipient.id, recipient.displayName + " · agent", "← acceptance",
+      "Accepts 13:00 — the only candidate clear of " + recipient.displayName + "'s existing blocks.", false);
+    await sleep(900);
+
+    // Step V — seal
+    setStep(5);
+    activateArrow("sb-arrow-back");
+    appendExchangeBadge("A", sender.displayName, recipient.displayName, h.propEmit, h.acptEmit, taskId);
+    appendLedgerEntry(sender.id,    { seq: 1, ts: nowTs(), action: "emit",    op: "proposal_v1",   actor: sender.id,    counterpart: recipient.id, hash: h.propEmit });
+    appendLedgerEntry(recipient.id, { seq: 1, ts: nowTs(), action: "receive", op: "proposal_v1",   actor: recipient.id, counterpart: sender.id,    hash: h.propRecv });
+    await sleep(550);
+    appendLedgerEntry(recipient.id, { seq: 2, ts: nowTs(), action: "emit",    op: "acceptance_v1", actor: recipient.id, counterpart: sender.id,    hash: h.acptEmit });
+    appendLedgerEntry(sender.id,    { seq: 2, ts: nowTs(), action: "receive", op: "acceptance_v1", actor: sender.id,    counterpart: recipient.id, hash: h.acptRecv });
+    await sleep(700);
+
+    // Step VI — fit
+    setStep(6);
+    narrativeBeat("Two ledgers, two signed entries each, one matching scoped hash. The tesserae fit.");
+    showTesseraFit("tessera fit · trust verified");
+    await sleep(1700);
+    hideTesseraFit();
+
+    // Step VII — update
+    setStep(7);
+    narrativeBeat("Both calendars gain a signed, agreed meeting. No titles or attendees ever crossed the wire.");
+    gainSlot(sender.id,    "13:00", "meeting with " + recipient.displayName, "signed · 30 min");
+    gainSlot(recipient.id, "13:00", "meeting with " + sender.displayName,    "signed · 30 min");
+    setStatus("run complete · " + sender.displayName + " ↔ " + recipient.displayName);
+  }
+
+  /* ===================================================================
+   *  Three-party cascading reschedule choreography
+   * =================================================================== */
+  async function runThreeParty(sender, pivot, third, duration) {
+    const root = $("sb-stage-root");
+    clearChildren(root);
+
+    const principalIds = [sender.id, pivot.id, third.id];
+    root.appendChild(buildNarrativeBand());
+    root.appendChild(buildStageGrid(principalIds));
+    root.appendChild(buildExchangeBadgesHost());
+    root.appendChild(buildDialoguePanel());
+    root.appendChild(buildLedgerBlock(principalIds));
+
+    buildSteps(["build", "scope", "cross", "reason", "cascade", "sub-accept", "seal", "fit", "update"]);
+    setStatus("three-party cascade · " + sender.displayName + " → " + pivot.displayName + " ↻ " + third.displayName);
+    $("sb-abort-banner").classList.remove("sb-abort-visible");
+    hideTesseraFit();
+
+    const h = {
+      propEmit:    fakeHash(11 + (sender.colorSlot+1) * 17),
+      propRecv:    fakeHash(13 + (pivot.colorSlot+1) * 19),
+      subPropEmit: fakeHash(23 + (pivot.colorSlot+1) * 29),
+      subPropRecv: fakeHash(29 + (third.colorSlot+1) * 31),
+      subAcptEmit: fakeHash(37 + (third.colorSlot+1) * 41),
+      subAcptRecv: fakeHash(43 + (pivot.colorSlot+1) * 47),
+      acptEmit:    fakeHash(53 + (pivot.colorSlot+1) * 59),
+      acptRecv:    fakeHash(61 + (sender.colorSlot+1) * 67),
+      richScope:   fakeHash(71 + duration),
+    };
+    const taskId1 = "task_" + fakeHash(7).slice(0, 12);
+    const taskId2 = "task_" + fakeHash(13).slice(0, 12);
+
+    // I — build
+    setStep(1);
+    narrativeBeat(sender.displayName + " asks their agent for a meeting with " + pivot.displayName + ". The agent builds a scoped proposal.");
+    dialogueThinking(sender.id, sender.displayName + " · agent", "intent",
+      "Find a " + duration + "-min slot with " + pivot.displayName + ". Builds proposal_v1, strips blocked fields per policy.");
+    await sleep(1000);
+
+    // II — scope
+    setStep(2);
+    narrativeBeat("Scoped projection assembled. The rich payload stays on " + sender.displayName + "'s side.");
+    revealScopedPayload(sender.id, sender.policy.outboundAllow, sender.policy.outboundBlock, h.richScope);
+    await sleep(800);
+
+    // III — cross (sender → pivot)
+    setStep(3);
+    activateArrow("sb-arrow-ab");
+    narrativeBeat(sender.displayName + "'s scoped proposal reaches " + pivot.displayName + ". The desired slot collides with a meeting " + pivot.displayName + " already has with " + third.displayName + ".");
+    dialogueAppend(sender.id, sender.displayName + " · agent", "→ proposal_v1",
+      "candidates: 3 slots · duration: " + duration + " min · constraint_hints: { tz: \"Europe/Lisbon\" }.", false);
+    await sleep(900);
+    revealScopedPayload(pivot.id, pivot.policy.inboundAllow, [], h.propRecv);
+    await sleep(700);
+
+    // IV — reason (pivot)
+    setStep(4);
+    narrativeBeat(pivot.displayName + "'s agent reasons: a held meeting with " + third.displayName + " blocks the natural slot. Propose moving the prior meeting forward.");
+    const blockingEv = (pivot.calendar || []).find(e => e.isBlocking) || { time: "14:00", title: "project-sync", attendees: third.displayName };
+    showReasoningTrace(pivot.id, {
+      requestedSlot:          "13:00",
+      blockingEventTitle:     blockingEv.title || "project-sync",
+      blockingEventAttendee:  blockingEv.attendees || third.displayName,
+      proposedNewSlot:        "16:00",
+      reason: pivot.reasoner.provider === "scripted"
+        ? "Scripted reasoner: holding meeting with " + third.displayName + " can be shifted to 16:00 (after " + pivot.displayName + "'s 15:30 1-on-1 ends). Both parties keep duration."
+        : (pivot.reasoner.provider + " · " + (pivot.reasoner.model || "(model unset)") + " — proposes 16:00 as the lowest-disruption fit (synthetic narration)."
+        )
+    });
+    dialogueThinking(pivot.id, pivot.displayName + " · agent", "reasoning",
+      "the requested slot collides with my prior meeting · proposing a cascade · holding 13:00 pending sub-accept from " + third.displayName);
+    await sleep(1500);
+
+    // V — cascade (pivot → third)
+    setStep(5);
+    activateArrow("sb-arrow-bc");
+    narrativeBeat(pivot.displayName + " opens a sub-exchange with " + third.displayName + ", asking to slide their meeting from 14:00 to 16:00.");
+    dialogueAppend(pivot.id, pivot.displayName + " · agent", "→ reschedule_v1",
+      "current: 14:00 · proposed: 16:00 · scope: project-sync. Titles + counter-attendees blocked per policy.", false);
+    await sleep(900);
+    revealScopedPayload(third.id, third.policy.inboundAllow, [], h.subPropRecv);
+    await sleep(700);
+
+    // VI — sub-accept (third → pivot)
+    setStep(6);
+    activateArrow("sb-arrow-cb");
+    narrativeBeat(third.displayName + " agrees. The original meeting moves forward; the 14:00 slot is released.");
+    dialogueAppend(third.id, third.displayName + " · agent", "← sub-acceptance",
+      "Accept reschedule to 16:00. " + pivot.displayName + " now holds a free 14:00 slot.", false);
+    await sleep(900);
+
+    // VII — seal (pivot → sender confirmation)
+    setStep(7);
+    activateArrow("sb-arrow-ba");
+    stopReasoningSpinner(pivot.id);
+    dialogueAppend(pivot.id, pivot.displayName + " · agent", "← acceptance",
+      "Accept 14:00 — sub-exchange with " + third.displayName + " freed the slot. Cascade depth ≤ " + pivot.policy.maxCascadeDepth + ".", false);
+
+    appendExchangeBadge("A", sender.displayName, pivot.displayName, h.propEmit,   h.acptEmit,   taskId1);
+    appendExchangeBadge("B", pivot.displayName,  third.displayName, h.subPropEmit, h.subAcptEmit, taskId2);
+    appendExchangeBadge("C", sender.displayName, pivot.displayName, h.propEmit,   h.acptEmit,   taskId1);
+
+    appendLedgerEntry(sender.id, { seq: 1, ts: nowTs(), action: "emit",    op: "proposal_v1",   actor: sender.id, counterpart: pivot.id, hash: h.propEmit });
+    appendLedgerEntry(pivot.id,  { seq: 1, ts: nowTs(), action: "receive", op: "proposal_v1",   actor: pivot.id,  counterpart: sender.id, hash: h.propRecv });
+    await sleep(450);
+    appendLedgerEntry(pivot.id,  { seq: 2, ts: nowTs(), action: "emit",    op: "reschedule_v1", actor: pivot.id,  counterpart: third.id, hash: h.subPropEmit });
+    appendLedgerEntry(third.id,  { seq: 1, ts: nowTs(), action: "receive", op: "reschedule_v1", actor: third.id,  counterpart: pivot.id, hash: h.subPropRecv });
+    await sleep(450);
+    appendLedgerEntry(third.id,  { seq: 2, ts: nowTs(), action: "emit",    op: "sub_acceptance_v1", actor: third.id, counterpart: pivot.id, hash: h.subAcptEmit });
+    appendLedgerEntry(pivot.id,  { seq: 3, ts: nowTs(), action: "receive", op: "sub_acceptance_v1", actor: pivot.id, counterpart: third.id, hash: h.subAcptRecv });
+    await sleep(450);
+    appendLedgerEntry(pivot.id,  { seq: 4, ts: nowTs(), action: "emit",    op: "acceptance_v1", actor: pivot.id,  counterpart: sender.id, hash: h.acptEmit });
+    appendLedgerEntry(sender.id, { seq: 2, ts: nowTs(), action: "receive", op: "acceptance_v1", actor: sender.id, counterpart: pivot.id,  hash: h.acptRecv });
+    await sleep(800);
+
+    // VIII — fit
+    setStep(8);
+    narrativeBeat("Three ledgers, six signed entries, two matching scoped hashes. The cascade closes.");
+    showTesseraFit("2 fits · cascade complete · trust verified");
+    await sleep(1900);
+    hideTesseraFit();
+
+    // IX — update
+    setStep(9);
+    narrativeBeat("Calendars settle. " + sender.displayName + " gains 14:00 with " + pivot.displayName + "; " + pivot.displayName + " and " + third.displayName + " slide their prior meeting to 16:00. No titles, no attendee emails ever crossed the wire.");
+    if (blockingEv) {
+      moveSlot(pivot.id, blockingEv.time);
+      moveSlot(third.id, blockingEv.time);
+    }
+    await sleep(500);
+    gainSlot(sender.id, "14:00", "meeting with " + pivot.displayName, "signed · " + duration + " min");
+    gainSlot(pivot.id,  "14:00", "meeting with " + sender.displayName, "signed · " + duration + " min");
+    gainSlot(pivot.id,  "16:00", "project-sync (moved)", "with " + third.displayName);
+    gainSlot(third.id,  "16:00", "project-sync (moved)", "with " + pivot.displayName);
+    setStatus("cascade complete · " + sender.displayName + " ↔ " + pivot.displayName + " · " + pivot.displayName + " ↔ " + third.displayName);
+  }
+
+  function nowTs() {
+    const d = new Date();
+    return d.toISOString().replace("T", " ").slice(0, 19) + "Z";
+  }
+
+  /* ===================================================================
+   *  Abort
+   * =================================================================== */
+  function renderAbort(reason) {
+    const ban = $("sb-abort-banner");
+    $("sb-abort-reason").textContent = reason || "Run aborted.";
+    ban.classList.add("sb-abort-visible");
+    narrativeBeat("Run aborted. " + (reason || ""));
+  }
+
+  /* ===================================================================
+   *  Reset session
+   * =================================================================== */
+  function resetSession() {
+    try { localStorage.removeItem(LS_KEY_PRINCIPALS); } catch (_) {}
+    SB_STATE.principals = seedDefaultPrincipals();
+    SB_STATE.openCards.clear();
+    SB_STATE.apiKeys = {};
+    persistSession();
+    renderEditor();
+    setStageIdle();
+  }
+
+  /* ===================================================================
+   *  Init
+   * =================================================================== */
+  function init() {
+    if (!hydrateSession()) {
+      SB_STATE.principals = seedDefaultPrincipals();
+      persistSession();
+    }
+    renderEditor();
+    hydrateRequestForm();
+    setStageIdle();
+
+    $("sb-fire-btn").addEventListener("click", fireRequest);
+    $("sb-req-sender").addEventListener("change", () => {
+      if ($("sb-req-sender").value === $("sb-req-recipient").value) {
+        const alt = SB_STATE.principals.find(p => p.id !== $("sb-req-sender").value);
+        if (alt) $("sb-req-recipient").value = alt.id;
+      }
+      updateFireState();
+    });
+    $("sb-req-recipient").addEventListener("change", updateFireState);
+    $("sb-add-principal-btn").addEventListener("click", addPrincipal);
+    $("sb-reset-btn").addEventListener("click", resetSession);
+    $("sb-abort-reset").addEventListener("click", () => setStageIdle());
+
+    probeBackend();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
