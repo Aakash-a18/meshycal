@@ -861,6 +861,264 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   .sb-req-field--note { grid-column: 1 / -1; }
 }
 
+/* =========================================================================
+ *  Shared timeline grid (Google-Calendar-style: hours Y, principals X)
+ * ========================================================================= */
+.sb-grid-section {
+  margin-bottom: 24px;
+}
+.sb-grid-section-eyebrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.sb-grid-section-eyebrow .lbl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.sb-grid-section-eyebrow .hint {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-mute);
+  letter-spacing: -0.005em;
+}
+
+.sb-grid {
+  border: 1px solid var(--rule);
+  background: hsl(40 30% 92%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header row: corner + per-principal column heads */
+.sb-grid-head {
+  display: grid;
+  border-bottom: 1px solid var(--rule);
+  background: hsl(40 28% 89%);
+}
+.sb-grid-corner {
+  border-right: 1px solid var(--rule);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  display: flex;
+  align-items: flex-end;
+}
+.sb-grid-user-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-left: 1px solid var(--rule);
+  min-width: 0;
+}
+.sb-grid-user-head:first-child { border-left: none; }
+.sb-grid-user-head-name {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-grid-user-head-id {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+/* Body: hour gutter + columns of events */
+.sb-grid-body {
+  display: grid;
+  position: relative;
+  background: var(--paper);
+}
+.sb-grid-hours {
+  display: flex;
+  flex-direction: column;
+  background: hsl(40 30% 90%);
+  border-right: 1px solid var(--rule);
+}
+.sb-grid-hour {
+  height: 56px;     /* HOUR_PX */
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-mute);
+  padding: 3px 10px 0;
+  text-align: right;
+  border-top: 1px solid hsl(34 18% 80%);
+  position: relative;
+}
+.sb-grid-hour:first-child { border-top: none; }
+.sb-grid-hour::after {
+  /* half-hour mark */
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  border-top: 1px dashed hsl(34 18% 84%);
+}
+
+.sb-grid-cols {
+  display: grid;
+  position: relative;
+}
+.sb-grid-col {
+  position: relative;
+  border-left: 1px solid hsl(34 18% 82%);
+  background-image:
+    /* hour lines */
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 55px,
+      hsl(34 18% 82%) 55px 56px
+    ),
+    /* half-hour dashed lines (using a stacked image) */
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 27px,
+      hsl(34 18% 88%) 27px 28px,
+      transparent 28px 56px
+    );
+  min-width: 0;
+}
+.sb-grid-col:first-child { border-left: none; }
+.sb-grid-col[data-active="true"] {
+  background-color: hsl(40 50% 89%);
+}
+
+/* Event blocks */
+.sb-grid-event {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  padding: 4px 8px 4px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.35;
+  overflow: hidden;
+  color: var(--ink);
+  background: hsl(40 50% 86%);
+  border-left: 3px solid hsl(40 60% 50%);
+  box-shadow: 0 1px 0 hsl(34 20% 50% / 0.15);
+  transition: opacity 400ms ease, transform 400ms ease, background 400ms ease;
+}
+.sb-grid-event-time {
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+.sb-grid-event-title {
+  font-style: italic;
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink);
+  margin-top: 1px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sb-grid-event-attendees {
+  color: var(--ink-mute);
+  font-size: 9.5px;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Per-principal-slot tint */
+.sb-grid-event--slot-0 { background: hsl(40 55% 86%);  border-left-color: hsl(40 60% 50%); }
+.sb-grid-event--slot-1 { background: hsl(155 28% 80%); border-left-color: var(--jade); }
+.sb-grid-event--slot-2 { background: hsl(13 55% 85%);  border-left-color: var(--terracotta); }
+.sb-grid-event--slot-3 { background: hsl(240 25% 84%); border-left-color: hsl(240 25% 52%); }
+.sb-grid-event--slot-4 { background: hsl(30 50% 84%);  border-left-color: hsl(30 55% 42%); }
+.sb-grid-event--slot-5 { background: hsl(270 22% 84%); border-left-color: hsl(270 20% 45%); }
+
+/* Hard-blocking event — terracotta dot in top-right corner */
+.sb-grid-event.blocking { border-left-color: var(--terracotta); }
+.sb-grid-event.blocking::before {
+  content: "●";
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  color: var(--terracotta);
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Booked-during-run state */
+.sb-grid-event.booked {
+  background: hsl(40 60% 88%);
+  border-left-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 1px 0 hsl(34 20% 50% / 0.2);
+}
+.sb-grid-event.booked::after {
+  content: "✓";
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  color: var(--gold-deep);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+/* Animation states */
+.sb-grid-event.sb-grid-moving-out {
+  opacity: 0.18;
+  transform: translateX(6px);
+  background: hsl(13 40% 88%) !important;
+}
+.sb-grid-event.sb-grid-moving-out .sb-grid-event-title { text-decoration: line-through; }
+.sb-grid-event.sb-grid-appearing { opacity: 0; transform: translateY(-6px); }
+.sb-grid-event.sb-grid-appeared  { opacity: 1; transform: translateY(0); }
+
+/* Empty-state placeholder for a column with no events */
+.sb-grid-col-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-mute);
+  text-align: center;
+  width: 80%;
+  pointer-events: none;
+}
+
+/* Compact stage party (calendars moved to the grid) */
+.sb-party.sb-party--compact { gap: 10px; }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .sb-grid-user-head { padding: 8px 10px; }
+  .sb-grid-user-head-name { font-size: 15px; }
+  .sb-grid-event { font-size: 9.5px; }
+  .sb-grid-event-title { font-size: 11px; }
+}
+
 /* Idle stage */
 .sb-stage-idle {
   font-family: var(--display);
@@ -1560,10 +1818,18 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       </div>
     </form>
 
+    <section class="sb-grid-section">
+      <div class="sb-grid-section-eyebrow">
+        <span class="lbl">shared timeline</span>
+        <span class="hint">8:00 — 19:00 · all principals · read-only</span>
+      </div>
+      <div id="sb-shared-grid" class="sb-grid"></div>
+    </section>
+
     <div id="sb-stage-root">
       <div id="sb-stage-idle" class="sb-stage-idle">
         fire a request to begin
-        <span class="small">the run will appear here</span>
+        <span class="small">the run will animate on the grid above</span>
       </div>
     </div>
 
@@ -1919,6 +2185,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       }));
       localStorage.setItem(LS_KEY_PRINCIPALS, JSON.stringify(sanitized));
     } catch (_) {}
+    // Re-render the shared grid whenever editor state changes (unless a run
+    // is mid-animation, in which case the grid is mid-choreography).
+    renderSharedGrid();
   }
 
   function hydrateSession() {
@@ -2535,15 +2804,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       who.appendChild(whoTxt);
       col.appendChild(who);
 
-      // Calendar
-      col.appendChild(elem("div", { className: "sb-panel-label", text: "calendar" }));
-      const cal = elem("div", { className: "sb-calendar", attrs: { id: "sb-cal-" + slugify(pid) } });
-      if (p.calendar.length === 0) {
-        cal.appendChild(elem("div", { className: "sb-cal-empty", text: "— no events —" }));
-      } else {
-        p.calendar.forEach(ev => cal.appendChild(buildCalendarEvent(ev, pid)));
-      }
-      col.appendChild(cal);
+      // Calendar lives in the shared grid above the stage now; the per-party
+      // column just shows the privacy payload + reasoning trace.
 
       // Payload panel (scoped disclosure visualization) — built lazily during run
       const ppHost = elem("div", { className: "sb-panel-label sb-hidden", text: "scoped payload" });
@@ -2807,33 +3069,158 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   }
 
   /* ===================================================================
-   *  Calendar deltas
+   *  Shared timeline grid (Y = time, X = principal)
+   * =================================================================== */
+  const GRID_START_HOUR = 8;
+  const GRID_END_HOUR   = 19;
+  const GRID_HOUR_PX    = 56;
+
+  function timeToMinutes(timeStr) {
+    const m = String(timeStr || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return 0;
+    return (parseInt(m[1], 10) - GRID_START_HOUR) * 60 + parseInt(m[2], 10);
+  }
+
+  function gridEventPosition(time, duration) {
+    const startMin = timeToMinutes(time);
+    const top = (startMin / 60) * GRID_HOUR_PX;
+    const height = Math.max(20, (parseInt(duration, 10) || 30) / 60 * GRID_HOUR_PX);
+    return { top, height };
+  }
+
+  function renderSharedGrid() {
+    if (SB_STATE.runInProgress) return;
+    const root = $("sb-shared-grid");
+    if (!root) return;
+    clearChildren(root);
+
+    const n = SB_STATE.principals.length;
+    if (n === 0) {
+      const empty = elem("div", { className: "sb-grid-col-empty", text: "no principals yet" });
+      empty.style.position = "static";
+      empty.style.transform = "none";
+      empty.style.padding = "32px";
+      empty.style.width = "auto";
+      root.appendChild(empty);
+      return;
+    }
+
+    const hoursCol = "64px";
+    const cols = "repeat(" + n + ", 1fr)";
+
+    // Header
+    const head = elem("div", { className: "sb-grid-head" });
+    head.style.gridTemplateColumns = hoursCol + " " + cols;
+    head.appendChild(elem("div", { className: "sb-grid-corner", text: "time" }));
+    SB_STATE.principals.forEach(p => {
+      const h = elem("div", { className: "sb-grid-user-head", attrs: { "data-pid": p.id } });
+      h.appendChild(elem("div", {
+        className: "sb-stage-avatar sb-stage-avatar--slot-" + p.colorSlot,
+        text: initialsOf(p.displayName)
+      }));
+      const txt = elem("div", { style: { minWidth: "0" } });
+      txt.appendChild(elem("div", { className: "sb-grid-user-head-name", text: p.displayName }));
+      txt.appendChild(elem("div", { className: "sb-grid-user-head-id",   text: p.id }));
+      h.appendChild(txt);
+      head.appendChild(h);
+    });
+    root.appendChild(head);
+
+    // Body — hour gutter + cols
+    const body = elem("div", { className: "sb-grid-body" });
+    body.style.gridTemplateColumns = hoursCol + " " + cols;
+
+    const hours = elem("div", { className: "sb-grid-hours" });
+    for (let h = GRID_START_HOUR; h < GRID_END_HOUR; h++) {
+      hours.appendChild(elem("div", { className: "sb-grid-hour", text: pad2(h) + ":00" }));
+    }
+    body.appendChild(hours);
+
+    const colsWrap = elem("div", { className: "sb-grid-cols", attrs: { id: "sb-grid-cols" } });
+    colsWrap.style.gridTemplateColumns = cols;
+    colsWrap.style.height = ((GRID_END_HOUR - GRID_START_HOUR) * GRID_HOUR_PX) + "px";
+
+    SB_STATE.principals.forEach(p => {
+      const col = elem("div", {
+        className: "sb-grid-col",
+        attrs: { "data-pid-col": p.id, id: "sb-grid-col-" + slugify(p.id) }
+      });
+      if (p.calendar.length === 0) {
+        col.appendChild(elem("div", { className: "sb-grid-col-empty", text: "no events" }));
+      } else {
+        p.calendar.forEach(ev => col.appendChild(buildGridEvent(p, ev)));
+      }
+      colsWrap.appendChild(col);
+    });
+    body.appendChild(colsWrap);
+    root.appendChild(body);
+  }
+
+  function buildGridEvent(p, ev) {
+    const pos = gridEventPosition(ev.time, ev.duration);
+    const node = elem("div", {
+      className: "sb-grid-event sb-grid-event--slot-" + p.colorSlot + (ev.isBlocking ? " blocking" : ""),
+      attrs: {
+        "data-slot": slotKey(p.id, ev.time),
+        title: (ev.title || "(untitled)") + " · " + ev.duration + " min" + (ev.attendees ? " · " + ev.attendees : "")
+      }
+    });
+    node.style.top = pos.top + "px";
+    node.style.height = pos.height + "px";
+    node.appendChild(elem("div", { className: "sb-grid-event-time", text: ev.time + " · " + ev.duration + "m" }));
+    node.appendChild(elem("div", { className: "sb-grid-event-title", text: ev.title || "(untitled)" }));
+    if (ev.attendees) node.appendChild(elem("div", { className: "sb-grid-event-attendees", text: ev.attendees }));
+    return node;
+  }
+
+  function gridHighlightColumns(principalIds, on) {
+    document.querySelectorAll("[data-pid-col]").forEach(el => {
+      if (on && principalIds.includes(el.getAttribute("data-pid-col"))) {
+        el.setAttribute("data-active", "true");
+      } else {
+        el.removeAttribute("data-active");
+      }
+    });
+  }
+
+  /* ===================================================================
+   *  Calendar deltas (operate on the shared grid)
    * =================================================================== */
   function moveSlot(pid, time) {
     const key = slotKey(pid, time);
-    const slot = document.querySelector('[data-slot="' + cssEscape(key) + '"]');
+    const col = document.getElementById("sb-grid-col-" + slugify(pid));
+    if (!col) return;
+    const slot = col.querySelector('[data-slot="' + cssEscape(key) + '"]');
     if (!slot) return;
-    slot.classList.add("sb-slot-moving-out");
-    setTimeout(() => { if (slot.parentNode) slot.parentNode.removeChild(slot); }, 400);
+    slot.classList.add("sb-grid-moving-out");
+    setTimeout(() => { if (slot.parentNode) slot.parentNode.removeChild(slot); }, 480);
   }
 
   function gainSlot(pid, time, title, attendees) {
-    const cal = document.getElementById("sb-cal-" + slugify(pid));
-    if (!cal) return;
-    // Remove any "no events" placeholder
-    const empty = cal.querySelector(".sb-cal-empty");
+    const col = document.getElementById("sb-grid-col-" + slugify(pid));
+    if (!col) return;
+    const empty = col.querySelector(".sb-grid-col-empty");
     if (empty) empty.remove();
 
-    const node = elem("div", { className: "sb-cal-event sb-slot-appearing booked", attrs: { "data-slot": slotKey(pid, time) } });
-    node.appendChild(elem("span", { className: "time", text: time }));
-    const inner = elem("div");
-    inner.appendChild(elem("div", { className: "title", text: title }));
-    if (attendees) inner.appendChild(elem("div", { className: "attendees", text: attendees }));
-    node.appendChild(inner);
-    cal.appendChild(node);
+    const p = principalById(pid);
+    const slot = p ? (p.colorSlot || 0) : 0;
+    const durMatch = String(attendees || "").match(/(\d+)\s*min/);
+    const duration = durMatch ? parseInt(durMatch[1], 10) : 30;
+    const pos = gridEventPosition(time, duration);
+
+    const node = elem("div", {
+      className: "sb-grid-event sb-grid-event--slot-" + slot + " booked sb-grid-appearing",
+      attrs: { "data-slot": slotKey(pid, time), title: title + " · " + duration + " min" }
+    });
+    node.style.top = pos.top + "px";
+    node.style.height = pos.height + "px";
+    node.appendChild(elem("div", { className: "sb-grid-event-time", text: time + " · " + duration + "m" }));
+    node.appendChild(elem("div", { className: "sb-grid-event-title", text: title }));
+    if (attendees) node.appendChild(elem("div", { className: "sb-grid-event-attendees", text: attendees }));
+    col.appendChild(node);
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      node.classList.remove("sb-slot-appearing");
-      node.classList.add("sb-slot-appeared");
+      node.classList.remove("sb-grid-appearing");
+      node.classList.add("sb-grid-appeared");
     }));
   }
 
@@ -3000,6 +3387,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
    * =================================================================== */
   async function fireRequest() {
     if (SB_STATE.runInProgress) return;
+    // Rebuild the grid from current state so the run starts from a clean
+    // baseline (previous run's animated bookings get cleared).
+    renderSharedGrid();
     SB_STATE.runInProgress = true;
     updateFireState();
 
@@ -3294,6 +3684,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     persistSession();
     renderEditor();
     setStageIdle();
+    renderSharedGrid();
   }
 
   /* ===================================================================
@@ -3307,6 +3698,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     renderEditor();
     hydrateRequestForm();
     setStageIdle();
+    renderSharedGrid();
 
     $("sb-fire-btn").addEventListener("click", fireRequest);
     $("sb-req-sender").addEventListener("change", () => {
