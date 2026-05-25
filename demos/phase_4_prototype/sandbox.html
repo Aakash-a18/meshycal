@@ -461,7 +461,234 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .sb-add-principal-btn { margin-top: 18px; }
 
-/* Policy editor */
+/* Archetype auto-fill */
+.sb-archetype-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: hsl(40 28% 88%);
+  border: 1px dashed hsl(34 18% 68%);
+}
+.sb-archetype-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+.sb-archetype-select {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 5px 8px;
+  outline: none;
+}
+.sb-archetype-select:focus { border-color: var(--ink-soft); }
+
+.sb-empty-events {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-mute);
+  text-align: center;
+  padding: 14px 8px;
+  border: 1px dashed hsl(34 18% 80%);
+  list-style: none;
+  background: hsl(40 28% 91%);
+}
+
+/* Per-event "hard block" toggle */
+.sb-event-block-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  padding: 4px 4px 0;
+  cursor: pointer;
+  user-select: none;
+}
+.sb-event-block-row input {
+  margin: 0;
+  accent-color: var(--terracotta-deep);
+  cursor: pointer;
+}
+.sb-event-block-row[data-on="true"] {
+  color: var(--terracotta-deep);
+  font-weight: 500;
+}
+.sb-event-block-row[data-on="true"]::before {
+  content: "● ";
+  color: var(--terracotta);
+}
+
+/* Plain-English privacy panel */
+.sb-friendly-policy { display: flex; flex-direction: column; gap: 0; }
+.sb-friendly-policy-intro {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+.sb-toggle-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px dashed hsl(34 18% 80%);
+  cursor: pointer;
+  user-select: none;
+}
+.sb-toggle-row:last-child { border-bottom: none; }
+.sb-toggle-row:hover { background: hsl(40 28% 89%); }
+.sb-toggle-switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  background: hsl(34 14% 76%);
+  border: 1px solid hsl(34 14% 60%);
+  border-radius: 12px;
+  transition: background 180ms ease, border-color 180ms ease;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.sb-toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 1px; left: 1px;
+  width: 14px; height: 14px;
+  background: var(--paper);
+  border-radius: 50%;
+  transition: transform 180ms ease;
+  box-shadow: 0 1px 0 hsl(34 20% 50% / 0.3);
+}
+.sb-toggle-row[data-on="true"] .sb-toggle-switch {
+  background: var(--jade);
+  border-color: var(--jade-deep);
+}
+.sb-toggle-row[data-on="true"] .sb-toggle-switch::after {
+  transform: translateX(14px);
+}
+.sb-toggle-label {
+  font-family: var(--body);
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.sb-toggle-label .small {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-mute);
+  margin-top: 3px;
+  font-style: normal;
+}
+.sb-toggle-label .field-code {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: hsl(40 25% 42%);
+  background: hsl(40 28% 86%);
+  padding: 1px 5px;
+  letter-spacing: 0.04em;
+}
+
+.sb-cascade-block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed hsl(34 18% 72%);
+}
+.sb-cascade-title {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink);
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+.sb-cascade-radios { display: flex; flex-direction: column; gap: 2px; }
+.sb-cascade-opt {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 6px 6px;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink);
+}
+.sb-cascade-opt:hover { background: hsl(40 28% 89%); }
+.sb-cascade-opt input[type="radio"] {
+  margin-top: 4px;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+.sb-cascade-opt .small {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-mute);
+  margin-top: 2px;
+  text-transform: lowercase;
+}
+
+.sb-policy-advanced {
+  margin-top: 16px;
+  border-top: 1px dashed hsl(34 18% 72%);
+  padding-top: 12px;
+}
+.sb-policy-advanced summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  padding: 4px 0;
+  list-style: none;
+  transition: color 150ms ease;
+}
+.sb-policy-advanced summary::-webkit-details-marker { display: none; }
+.sb-policy-advanced summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 150ms ease;
+}
+.sb-policy-advanced[open] summary::before { transform: rotate(90deg); }
+.sb-policy-advanced summary:hover { color: var(--ink); }
+.sb-policy-advanced-body {
+  padding: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sb-policy-advanced-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+/* Legacy policy styles (still used inside the advanced disclosure) */
 .sb-policy-block { display: grid; gap: 10px; }
 .sb-policy-label {
   font-family: var(--mono);
@@ -1369,6 +1596,172 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   const DEFAULT_OUTBOUND_BLOCK = ["calendar_titles", "attendee_emails"];
   const DEFAULT_INBOUND_ALLOW  = ["candidates", "duration_minutes", "constraint_hints"];
 
+  /* -----------------------------------------------------------------
+   *  Calendar archetypes — realistic professional-world templates
+   *  Each event: { time, duration, title, attendees, isBlocking }
+   *  Times stay between 09:00 and 17:30 (working hours).
+   * ----------------------------------------------------------------- */
+  const ARCHETYPES = {
+    manager: {
+      label: "Manager — back to back",
+      events: [
+        { time: "09:00", duration: 30, title: "team-standup",    attendees: "team",     isBlocking: false },
+        { time: "09:45", duration: 30, title: "1-on-1",          attendees: "report-a", isBlocking: false },
+        { time: "10:30", duration: 60, title: "product-review",  attendees: "product",  isBlocking: false },
+        { time: "12:00", duration: 45, title: "lunch",           attendees: "solo",     isBlocking: false },
+        { time: "13:30", duration: 45, title: "design-crit",     attendees: "design",   isBlocking: false },
+        { time: "14:30", duration: 30, title: "1-on-1",          attendees: "report-b", isBlocking: true  },
+        { time: "15:30", duration: 45, title: "customer-call",   attendees: "customer", isBlocking: false },
+        { time: "16:30", duration: 30, title: "weekly-planning", attendees: "team",     isBlocking: false }
+      ]
+    },
+    engineer: {
+      label: "Engineer — focus blocks",
+      events: [
+        { time: "09:30", duration: 15,  title: "standup",     attendees: "team", isBlocking: false },
+        { time: "10:00", duration: 120, title: "focus-block", attendees: "solo", isBlocking: false },
+        { time: "12:15", duration: 30,  title: "lunch",       attendees: "solo", isBlocking: false },
+        { time: "13:00", duration: 30,  title: "code-review", attendees: "peer", isBlocking: true  },
+        { time: "14:00", duration: 120, title: "deep-work",   attendees: "solo", isBlocking: false },
+        { time: "16:30", duration: 30,  title: "pr-sync",     attendees: "peer", isBlocking: false }
+      ]
+    },
+    founder: {
+      label: "Founder — varied",
+      events: [
+        { time: "09:00", duration: 45, title: "investor-call",       attendees: "investor",  isBlocking: false },
+        { time: "10:00", duration: 45, title: "board-prep",          attendees: "solo",      isBlocking: false },
+        { time: "11:00", duration: 30, title: "product-review",      attendees: "team",      isBlocking: false },
+        { time: "13:00", duration: 45, title: "advisor-1on1",        attendees: "advisor",   isBlocking: false },
+        { time: "14:00", duration: 30, title: "customer-interview",  attendees: "customer",  isBlocking: true  },
+        { time: "15:00", duration: 60, title: "team-town-hall",      attendees: "team",      isBlocking: false },
+        { time: "16:30", duration: 45, title: "candidate-interview", attendees: "candidate", isBlocking: false }
+      ]
+    },
+    designer: {
+      label: "Designer — reviews & deep work",
+      events: [
+        { time: "09:30", duration: 60,  title: "design-critique",  attendees: "design", isBlocking: false },
+        { time: "11:00", duration: 90,  title: "concept-explore",  attendees: "solo",   isBlocking: false },
+        { time: "13:00", duration: 30,  title: "stakeholder-sync", attendees: "pm",     isBlocking: true  },
+        { time: "14:00", duration: 120, title: "production-work",  attendees: "solo",   isBlocking: false },
+        { time: "16:30", duration: 30,  title: "design-1on1",      attendees: "report", isBlocking: false }
+      ]
+    },
+    openDay: {
+      label: "Open day — light",
+      events: [
+        { time: "10:00", duration: 30, title: "standup",    attendees: "team", isBlocking: false },
+        { time: "14:00", duration: 30, title: "quick-sync", attendees: "peer", isBlocking: false }
+      ]
+    },
+    empty: {
+      label: "Empty — clear schedule",
+      events: []
+    },
+    randomize: {
+      label: "Randomize a typical day",
+      generator: true
+    }
+  };
+
+  function generateRandomDay() {
+    const titles = [
+      "standup", "1-on-1", "design-review", "planning", "demo",
+      "customer-call", "interview", "product-review",
+      "weekly-review", "focus-block", "lunch", "code-review",
+      "stakeholder-sync", "advisor-1on1", "pr-sync"
+    ];
+    const attendees = ["team", "peer", "report", "customer", "pm", "design", "investor", "solo", "advisor"];
+    const durations = [30, 30, 45, 45, 60];
+    const events = [];
+    let hour = 9;
+    let placedBlocker = false;
+    while (hour < 17) {
+      if (events.length >= 8) break;
+      const dur = durations[Math.floor(Math.random() * durations.length)];
+      const title = titles[Math.floor(Math.random() * titles.length)];
+      const att = attendees[Math.floor(Math.random() * attendees.length)];
+      const isBlocking = !placedBlocker && Math.random() < 0.45;
+      if (isBlocking) placedBlocker = true;
+      const minute = Math.random() < 0.55 ? "00" : "30";
+      events.push({
+        time: pad2(hour) + ":" + minute,
+        duration: dur,
+        title: title,
+        attendees: att,
+        isBlocking: isBlocking
+      });
+      const advance = 1 + Math.floor(Math.random() * 2);
+      hour += advance;
+    }
+    if (!placedBlocker && events.length > 0) {
+      const idx = Math.floor(events.length / 2);
+      events[idx].isBlocking = true;
+    }
+    return events;
+  }
+
+  function applyArchetype(p, key) {
+    const arch = ARCHETYPES[key];
+    if (!arch) return;
+    if (arch.generator) {
+      p.calendar = generateRandomDay();
+    } else {
+      p.calendar = arch.events.map(e => Object.assign({}, e));
+    }
+    persistSession();
+    rerenderCard(p);
+  }
+
+  /* -----------------------------------------------------------------
+   *  Privacy / policy toggles — plain-English mapping
+   * ----------------------------------------------------------------- */
+  const POLICY_TOGGLES = [
+    {
+      field: "candidates",
+      label: "Share which time slots are free",
+      desc: "the specific times the agent proposes — e.g. \"tue 13:00, wed 10:00\""
+    },
+    {
+      field: "duration_minutes",
+      label: "Share how long the meeting should be",
+      desc: "just the length — e.g. \"30 minutes\""
+    },
+    {
+      field: "constraint_hints",
+      label: "Share the timezone and similar hints",
+      desc: "context for matching · timezone, working hours, etc."
+    },
+    {
+      field: "calendar_titles",
+      label: "Share titles of meetings already on the calendar",
+      desc: "things like \"weekly-review\" or \"customer-call\" · off keeps your day private"
+    },
+    {
+      field: "attendee_emails",
+      label: "Share who else is in your existing meetings",
+      desc: "names / emails of people in your other meetings · off keeps your network private"
+    }
+  ];
+
+  function isFieldShared(p, field) {
+    return p.policy.outboundAllow.includes(field);
+  }
+
+  function setFieldShared(p, field, on) {
+    if (on) {
+      if (!p.policy.outboundAllow.includes(field)) p.policy.outboundAllow.push(field);
+      p.policy.outboundBlock = p.policy.outboundBlock.filter(f => f !== field);
+      if (!p.policy.inboundAllow.includes(field))  p.policy.inboundAllow.push(field);
+    } else {
+      p.policy.outboundAllow = p.policy.outboundAllow.filter(f => f !== field);
+      if (!p.policy.outboundBlock.includes(field)) p.policy.outboundBlock.push(field);
+      p.policy.inboundAllow  = p.policy.inboundAllow.filter(f => f !== field);
+    }
+    persistSession();
+  }
+
   /* ===================================================================
    *  State
    * =================================================================== */
@@ -1680,8 +2073,35 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       elem("span", { className: "hint", text: p.calendar.length + " / " + MAX_EVENTS })
     ));
 
+    // Archetype auto-fill dropdown
+    const archRow = elem("div", { className: "sb-archetype-row" });
+    archRow.appendChild(elem("div", { className: "sb-archetype-label", text: "auto-fill" }));
+    const archSel = elem("select", { className: "sb-archetype-select", attrs: { "aria-label": "auto-fill from archetype" } });
+    const placeholderTxt = p.calendar.length > 0
+      ? "— pick an archetype (replaces current) —"
+      : "— pick an archetype —";
+    archSel.appendChild(elem("option", { attrs: { value: "" }, text: placeholderTxt }));
+    Object.keys(ARCHETYPES).forEach(k => {
+      archSel.appendChild(elem("option", { attrs: { value: k }, text: ARCHETYPES[k].label }));
+    });
+    archSel.addEventListener("change", (e) => {
+      const key = e.target.value;
+      if (!key) return;
+      if (p.calendar.length > 0) {
+        const ok = window.confirm("Replace " + p.displayName + "'s current calendar with the \"" + ARCHETYPES[key].label + "\" archetype?");
+        if (!ok) { archSel.value = ""; return; }
+      }
+      applyArchetype(p, key);
+    });
+    archRow.appendChild(archSel);
+    sec.appendChild(archRow);
+
     const ul = elem("ul", { className: "sb-event-list" });
-    p.calendar.forEach((ev, idx) => ul.appendChild(renderEventRow(p, ev, idx)));
+    if (p.calendar.length === 0) {
+      ul.appendChild(elem("li", { className: "sb-empty-events", text: "— no events yet — pick an archetype above or use \"add event\" below —" }));
+    } else {
+      p.calendar.forEach((ev, idx) => ul.appendChild(renderEventRow(p, ev, idx)));
+    }
     sec.appendChild(ul);
 
     const addBtn = elem("button", { className: "sb-add-event-btn", attrs: { type: "button" }, text: "+ add event" });
@@ -1726,6 +2146,24 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     attRow.appendChild(att);
     li.appendChild(attRow);
 
+    // Per-event hard-block toggle. When ON, the event "blocks" — a request
+    // for this slot will trigger a cascading reschedule. Visible terracotta
+    // so users can see what will trigger a 3-party run.
+    const blockRow = elem("label", {
+      className: "sb-event-block-row",
+      attrs: { "data-on": String(!!ev.isBlocking) }
+    });
+    const blockCb = elem("input", { attrs: { type: "checkbox" } });
+    if (ev.isBlocking) blockCb.checked = true;
+    blockCb.addEventListener("change", (e) => {
+      ev.isBlocking = e.target.checked;
+      blockRow.dataset.on = String(ev.isBlocking);
+      persistSession();
+    });
+    blockRow.appendChild(blockCb);
+    blockRow.appendChild(document.createTextNode("hard block — won't move in a cascade"));
+    li.appendChild(blockRow);
+
     return li;
   }
 
@@ -1742,29 +2180,93 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   function renderPolicySection(p) {
     const sec = elem("div", { className: "sb-card-section" });
     sec.appendChild(elem("div", { className: "sb-card-section-eyebrow" },
-      elem("span", { text: "policy" }),
-      elem("span", { className: "hint", text: "meshycal.scheduling/proposal-v1" })
+      elem("span", { text: "privacy" }),
+      elem("span", { className: "hint", text: "what " + p.displayName + "'s agent shares" })
     ));
 
-    const block = elem("div", { className: "sb-policy-block" });
+    const panel = elem("div", { className: "sb-friendly-policy" });
+    panel.appendChild(elem("p", {
+      className: "sb-friendly-policy-intro",
+      text: p.displayName + "'s agent will share only what's switched on below. Everything else stays on this side of the wire — a scoped copy is what crosses to other agents."
+    }));
 
-    block.appendChild(renderTagField(p, "outboundAllow", "outbound · allow", false));
-    block.appendChild(renderTagField(p, "outboundBlock", "outbound · block", true));
-    block.appendChild(renderTagField(p, "inboundAllow",  "inbound · allow",  false));
+    POLICY_TOGGLES.forEach(t => {
+      const on = isFieldShared(p, t.field);
+      const row = elem("div", {
+        className: "sb-toggle-row",
+        attrs: { "data-on": String(on), role: "checkbox", "aria-checked": String(on), tabindex: "0" }
+      });
+      row.appendChild(elem("div", { className: "sb-toggle-switch", attrs: { "aria-hidden": "true" } }));
 
-    const cascadeRow = elem("div", { className: "sb-cascade-row" });
-    cascadeRow.appendChild(elem("div", { className: "sb-policy-label", text: "max cascade depth" }));
-    const sel = elem("select");
-    [0, 1, 2, 3].forEach(n => {
-      const opt = elem("option", { attrs: { value: String(n) }, text: String(n) });
-      if (p.policy.maxCascadeDepth === n) opt.selected = true;
-      sel.appendChild(opt);
+      const lbl = elem("div", { className: "sb-toggle-label" });
+      lbl.appendChild(document.createTextNode(t.label));
+      const small = elem("span", { className: "small" });
+      small.appendChild(document.createTextNode(t.desc + " · "));
+      small.appendChild(elem("span", { className: "field-code", text: t.field }));
+      lbl.appendChild(small);
+      row.appendChild(lbl);
+
+      function flip() {
+        const next = !isFieldShared(p, t.field);
+        setFieldShared(p, t.field, next);
+        row.dataset.on = String(next);
+        row.setAttribute("aria-checked", String(next));
+      }
+      row.addEventListener("click", flip);
+      row.addEventListener("keydown", (e) => {
+        if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
+      });
+      panel.appendChild(row);
     });
-    sel.addEventListener("change", (e) => { p.policy.maxCascadeDepth = parseInt(e.target.value, 10); persistSession(); });
-    cascadeRow.appendChild(sel);
-    block.appendChild(cascadeRow);
 
-    sec.appendChild(block);
+    // Cascade — plain English radio group
+    const cas = elem("div", { className: "sb-cascade-block" });
+    cas.appendChild(elem("p", {
+      className: "sb-cascade-title",
+      text: "How far can " + p.displayName + "'s agent negotiate on their behalf?"
+    }));
+    const opts = elem("div", { className: "sb-cascade-radios" });
+    const CASCADE_OPTIONS = [
+      { v: 0, label: "Just answer yes / no",                                small: "depth 0 · no cascades, safest" },
+      { v: 1, label: "Can ask one other person on " + p.displayName + "'s behalf", small: "depth 1 · default · the cascading-reschedule scenario" },
+      { v: 2, label: "Can chain up to two reshuffles",                      small: "depth 2 · more flexibility" },
+      { v: 3, label: "Allow deep cascades",                                 small: "depth 3 · agent has wide latitude" }
+    ];
+    const radioName = "sb-cascade-" + slugify(p.id);
+    CASCADE_OPTIONS.forEach(o => {
+      const optLbl = elem("label", { className: "sb-cascade-opt" });
+      const r = elem("input", { attrs: { type: "radio", name: radioName, value: String(o.v) } });
+      if (p.policy.maxCascadeDepth === o.v) r.checked = true;
+      r.addEventListener("change", () => {
+        p.policy.maxCascadeDepth = o.v;
+        persistSession();
+      });
+      optLbl.appendChild(r);
+      const txt = elem("div");
+      txt.appendChild(document.createTextNode(o.label));
+      txt.appendChild(elem("span", { className: "small", text: o.small }));
+      optLbl.appendChild(txt);
+      opts.appendChild(optLbl);
+    });
+    cas.appendChild(opts);
+    panel.appendChild(cas);
+
+    sec.appendChild(panel);
+
+    // Advanced — show the raw policy tag lists for power users
+    const adv = elem("details", { className: "sb-policy-advanced" });
+    adv.appendChild(elem("summary", { text: "show raw policy fields" }));
+    const advBody = elem("div", { className: "sb-policy-advanced-body" });
+    advBody.appendChild(elem("div", {
+      className: "sb-policy-advanced-hint",
+      text: "the underlying meshycal.scheduling/proposal-v1 field lists. the toggles above edit these; you can also edit directly here."
+    }));
+    advBody.appendChild(renderTagField(p, "outboundAllow", "outbound · allow", false));
+    advBody.appendChild(renderTagField(p, "outboundBlock", "outbound · block", true));
+    advBody.appendChild(renderTagField(p, "inboundAllow",  "inbound · allow",  false));
+    adv.appendChild(advBody);
+    sec.appendChild(adv);
+
     return sec;
   }
 
