@@ -3126,9 +3126,13 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     });
     root.appendChild(head);
 
-    // Body — hour gutter + cols
+    // Body — hour gutter + cols.
+    // Two tracks (64px + 1fr); the second track holds colsWrap which itself
+    // splits into N equal columns. If we used the full "repeat(N, 1fr)" here
+    // the colsWrap would only occupy track 2 and squish everything into 1/N
+    // of the available width.
     const body = elem("div", { className: "sb-grid-body" });
-    body.style.gridTemplateColumns = hoursCol + " " + cols;
+    body.style.gridTemplateColumns = hoursCol + " 1fr";
 
     const hours = elem("div", { className: "sb-grid-hours" });
     for (let h = GRID_START_HOUR; h < GRID_END_HOUR; h++) {
