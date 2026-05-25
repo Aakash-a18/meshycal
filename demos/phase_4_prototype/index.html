@@ -1455,6 +1455,28 @@ button[disabled], .btn[disabled] {
   gap: 24px;
   margin-top: 48px;
 }
+/* Without min-width:0 the grid tracks expand to fit each ledger's widest
+   content (64-char SHA-256 hashes), which makes the whole row wider than
+   the page and clips the leftmost panel(s) off-screen. min-width:0 lets
+   the tracks honor the 1fr/1.4fr proportions; the hash wrap rule below
+   then keeps each hash inside its column. */
+.s3-ledger-block > .ledger { min-width: 0; }
+.s3-ledger-block .ledger-entry { min-width: 0; }
+.s3-ledger-block .ledger-entry .body { min-width: 0; overflow: hidden; }
+.s3-ledger-block .ledger-entry .body .hash {
+  display: block;
+  margin-left: 110px;        /* line up with .v position (.k is 110px wide) */
+  margin-top: -1.65em;       /* pull onto the same line as the label when there's room */
+  word-break: break-all;     /* wraps the hex string at any character */
+  overflow: visible;
+  text-overflow: clip;
+}
+@media (max-width: 1080px) {
+  .s3-ledger-block .ledger-entry .body .hash {
+    margin-left: 0;
+    margin-top: 2px;
+  }
+}
 
 .s3-abort-banner {
   border: 1px solid var(--terracotta-deep);
