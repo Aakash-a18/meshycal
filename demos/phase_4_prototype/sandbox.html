@@ -1148,6 +1148,44 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   box-shadow: 0 1px 0 hsl(34 20% 50% / 0.15);
   transition: opacity 400ms ease, transform 400ms ease, background 400ms ease;
 }
+
+/* Persisted events are draggable along Y. Ephemeral booked-during-run
+   blocks (.sb-grid-event without --draggable) stay frozen. */
+.sb-grid-event--draggable {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;       /* let pointer events own vertical movement */
+}
+.sb-grid-event--dragging {
+  cursor: grabbing !important;
+  z-index: 5;
+  opacity: 0.92;
+  box-shadow: 0 8px 24px hsl(34 20% 30% / 0.35), 0 2px 0 hsl(34 20% 30% / 0.2);
+  transition: none;        /* no smoothing while actively dragging */
+}
+
+/* The little time-readout chip that floats near the cursor while
+   dragging. Position is updated in JS via fixed coords. */
+.sb-drag-tooltip {
+  position: fixed;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  border: 1px solid var(--ink-soft);
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 2px 8px hsl(220 28% 11% / 0.4);
+}
+.sb-drag-tooltip .delta {
+  display: block;
+  font-size: 9px;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  margin-top: 2px;
+}
 .sb-grid-event-time {
   font-weight: 500;
   color: var(--ink-soft);
@@ -3515,18 +3553,16 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   function buildGridEvent(p, ev, layout) {
     const pos = gridEventPosition(ev.time, ev.duration);
     const node = elem("div", {
-      className: "sb-grid-event sb-grid-event--slot-" + p.colorSlot + (ev.isBlocking ? " blocking" : ""),
+      className: "sb-grid-event sb-grid-event--slot-" + p.colorSlot + " sb-grid-event--draggable" + (ev.isBlocking ? " blocking" : ""),
       attrs: {
         "data-slot": slotKey(p.id, ev.time),
-        title: (ev.title || "(untitled)") + " · " + ev.duration + " min" + (ev.attendees ? " · " + ev.attendees : "")
+        title: (ev.title || "(untitled)") + " · " + ev.duration + " min" + (ev.attendees ? " · " + ev.attendees : "") + " · drag to move"
       }
     });
     node.style.top = pos.top + "px";
     node.style.height = pos.height + "px";
 
     // Side-by-side layout when events overlap within a principal's column.
-    // layout.totalCols > 1 means this event shares its time span with others;
-    // split the column horizontally so neither hides the other.
     if (layout && layout.totalCols > 1) {
       const widthPct = 100 / layout.totalCols;
       node.style.left  = "calc(" + (layout.col * widthPct) + "% + 3px)";
@@ -3538,7 +3574,157 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     node.appendChild(elem("div", { className: "sb-grid-event-time", text: ev.time + " · " + ev.duration + "m" }));
     node.appendChild(elem("div", { className: "sb-grid-event-title", text: ev.title || "(untitled)" }));
     if (ev.attendees) node.appendChild(elem("div", { className: "sb-grid-event-attendees", text: ev.attendees }));
+
+    // Wire pointer-based drag along Y. The handler closure captures
+    // (p, ev) by reference, so mutating ev.time updates p.calendar
+    // directly — persistSession then triggers a grid re-render.
+    attachGridDrag(node, p, ev);
+
     return node;
+  }
+
+  /* -----------------------------------------------------------------
+   *  Drag-to-move on the timeline grid (Y axis only). Snaps to 15-min
+   *  increments. Cancel on pointercancel (browser interruption).
+   *
+   *  Only attaches to events rendered from SB_STATE.principals — the
+   *  ephemeral booked-during-run blocks created by gainSlot() do not
+   *  receive the listener and stay pinned in place.
+   * ----------------------------------------------------------------- */
+  const SNAP_MINUTES = 15;
+  let _sbDragTooltip = null;
+
+  function attachGridDrag(node, principal, ev) {
+    let drag = null;
+
+    function startDrag(e) {
+      if (SB_STATE.runInProgress) return;
+      if (e.button !== undefined && e.button !== 0) return;
+      e.preventDefault();
+      try { node.setPointerCapture(e.pointerId); } catch (_) {}
+
+      drag = {
+        pointerId: e.pointerId,
+        startY: e.clientY,
+        startTimeMin: timeToMinutes(ev.time),
+        startTopPx: (parseFloat(node.style.top) || 0),
+        duration: ev.duration,
+        committed: false
+      };
+
+      node.classList.add("sb-grid-event--dragging");
+      showDragTooltip(node, ev.time, 0);
+    }
+
+    function moveDrag(e) {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      e.preventDefault();
+
+      const deltaPx = e.clientY - drag.startY;
+      const deltaMinRaw = deltaPx * (60 / GRID_HOUR_PX);
+      const deltaMinSnap = Math.round(deltaMinRaw / SNAP_MINUTES) * SNAP_MINUTES;
+
+      const gridSpanMin = (GRID_END_HOUR - GRID_START_HOUR) * 60;
+      let nextStartMin = drag.startTimeMin + deltaMinSnap;
+      nextStartMin = Math.max(0, Math.min(gridSpanMin - drag.duration, nextStartMin));
+
+      const nextTopPx = (nextStartMin / 60) * GRID_HOUR_PX;
+      node.style.top = nextTopPx + "px";
+
+      const nextHHMM = _minutesToHHMM(nextStartMin);
+      const minutesMoved = nextStartMin - drag.startTimeMin;
+      updateDragTooltip(node, nextHHMM, minutesMoved);
+    }
+
+    function endDrag(e, commit) {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      if (drag.committed) return;
+      drag.committed = true;
+      try { node.releasePointerCapture(e.pointerId); } catch (_) {}
+      node.classList.remove("sb-grid-event--dragging");
+      hideDragTooltip();
+
+      if (commit) {
+        // Read the final snap position from the node's top px.
+        const finalTopPx = parseFloat(node.style.top) || 0;
+        const finalStartMin = Math.round((finalTopPx / GRID_HOUR_PX) * 60 / SNAP_MINUTES) * SNAP_MINUTES;
+        const newHHMM = _minutesToHHMM(finalStartMin);
+
+        if (newHHMM !== ev.time) {
+          ev.time = newHHMM;
+          persistSession(); // re-renders the grid with new layout + free bands
+        } else {
+          // No net move — snap the DOM position back to its rendered
+          // position (in case the user did sub-snap nudging).
+          node.style.top = drag.startTopPx + "px";
+        }
+      } else {
+        // Cancelled — restore visual position.
+        node.style.top = drag.startTopPx + "px";
+      }
+      drag = null;
+    }
+
+    node.addEventListener("pointerdown", startDrag);
+    node.addEventListener("pointermove", moveDrag);
+    node.addEventListener("pointerup",     (e) => endDrag(e, true));
+    node.addEventListener("pointercancel", (e) => endDrag(e, false));
+  }
+
+  function _minutesToHHMM(offsetMinutes) {
+    const totalMin = (GRID_START_HOUR * 60) + offsetMinutes;
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return pad2(h) + ":" + pad2(m);
+  }
+
+  function showDragTooltip(node, time, deltaMin) {
+    hideDragTooltip();
+    _sbDragTooltip = elem("div", { className: "sb-drag-tooltip" });
+    _sbDragTooltip.appendChild(document.createTextNode(time));
+    if (deltaMin !== 0) {
+      const sign = deltaMin > 0 ? "+" : "−";
+      _sbDragTooltip.appendChild(elem("span", {
+        className: "delta",
+        text: sign + Math.abs(deltaMin) + " min"
+      }));
+    }
+    document.body.appendChild(_sbDragTooltip);
+    positionDragTooltip(node);
+  }
+
+  function updateDragTooltip(node, time, deltaMin) {
+    if (!_sbDragTooltip) return;
+    clearChildren(_sbDragTooltip);
+    _sbDragTooltip.appendChild(document.createTextNode(time));
+    if (deltaMin !== 0) {
+      const sign = deltaMin > 0 ? "+" : "−";
+      _sbDragTooltip.appendChild(elem("span", {
+        className: "delta",
+        text: sign + Math.abs(deltaMin) + " min"
+      }));
+    }
+    positionDragTooltip(node);
+  }
+
+  function positionDragTooltip(node) {
+    if (!_sbDragTooltip) return;
+    const rect = node.getBoundingClientRect();
+    // Prefer right of the node, but flip if it would overflow viewport.
+    let left = rect.right + 10;
+    const tipW = _sbDragTooltip.offsetWidth || 80;
+    if (left + tipW > window.innerWidth - 8) {
+      left = rect.left - tipW - 10;
+    }
+    _sbDragTooltip.style.left = Math.max(8, left) + "px";
+    _sbDragTooltip.style.top  = (rect.top + 4) + "px";
+  }
+
+  function hideDragTooltip() {
+    if (_sbDragTooltip && _sbDragTooltip.parentNode) {
+      _sbDragTooltip.parentNode.removeChild(_sbDragTooltip);
+    }
+    _sbDragTooltip = null;
   }
 
   /* -----------------------------------------------------------------
