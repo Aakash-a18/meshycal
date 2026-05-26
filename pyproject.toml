@@ -35,8 +35,8 @@ dev = [
 mesherra = { path = "../mesherra", editable = true }
 
 [tool.hatch.build.targets.wheel]
-packages = ["demos"]
+packages = ["meshycal", "demos"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["demos/phase_1/tests", "demos/phase_4_prototype/tests"]
+testpaths = ["demos/phase_1/tests", "demos/phase_4_prototype/tests", "meshycal/tests"]

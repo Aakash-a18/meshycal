@@ -45,7 +45,7 @@ from .sandbox_models import (
     SandboxSessionCreated,
     SandboxSessionState,
 )
-from .sandbox_orchestrator import SandboxOrchestratorError, run_sandbox_two_party
+from .sandbox_runner import SandboxRunnerError, run_sandbox_two_party
 from .sandbox_session import session_store
 from .scenarios import NotYetImplemented, TwoPartyResult, run_two_party
 
@@ -278,7 +278,7 @@ async def run_sandbox_endpoint(
             request=body,
             api_keys=api_keys,
         )
-    except SandboxOrchestratorError as e:
+    except SandboxRunnerError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
