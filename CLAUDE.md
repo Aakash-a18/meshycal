@@ -2,16 +2,18 @@
 
 The first Delegation built on Mesherra. Scheduling, agent-mediated, privacy-preserving.
 
+The architecture is the source of truth. This file is orientation only — keep it short.
+
 ## What MeshyCal is
 
-A **Delegation** packaging:
+A **Delegation** packaging four parts that slot into a user's Mesherra stack at four different primitive levels:
 
-1. **Object class definitions** — Calendar, Meeting, Proposal (schemas registered in Mesherra's Schema Registry)
-2. **A scheduling Agent** — domain agent that runs under each user's butler; reads calendars, proposes slots, evaluates counter-proposals
-3. **Policy templates** — sensible defaults for safe scheduling (e.g., "share candidate slots, never share titles or attendees")
-4. **A mobile / web UI** — user-facing renderer
+1. **Object class definitions** — CalendarObject, MeetingObject, Proposal payload schema
+2. **A SchedulingAgent** — domain agent that runs under each user's butler; reads the CalendarObject, exchanges Proposals, creates MeetingObjects
+3. **Policy templates** — default outbound/inbound rules the user can override; merges into the user's signed PolicyDoc
+4. **A UI manifest + renderer** — `delegation.json` declares the install bundle; the renderer is disposable per host surface
 
-When installed, each piece slots into a user's Mesherra stack at a different primitive level. See `../mesherra/docs/ARCHITECTURE.md` section 10.
+Full spec: `docs/ARCHITECTURE.md`.
 
 ## Vocabulary
 
@@ -19,32 +21,34 @@ For Mesherra primitives (Agent, Object, Layer, Promotion, Handshake, Policy, Res
 
 MeshyCal-specific terms:
 
-- **Calendar Object** — an instance of the Calendar Object class. Owned by a single user; lives in their personal layer by default.
-- **Meeting Object** — an instance of the Meeting Object class. Produced as the output of a successful negotiation; co-owned conceptually but with one canonical owner per the architecture.
-- **Proposal** — a payload conforming to `meshycal.scheduling/proposal-v1`. The wire format for slot suggestions between scheduling agents.
-- **Scheduling Agent** — the MeshyCal domain agent. Runs under each user's butler. One per user per MeshyCal install.
+- **CalendarObject** — the user's calendar as a Mesherra-aligned Object. Owner-bound, lives in Personal layer, never crosses the wire.
+- **MeetingObject** — the canonical agreement produced by a successful negotiation. Single owner (the initiator), live-reference-promoted to the counterpart. Both sides relate to the same canonical Object.
+- **Proposal** — wire payload conforming to `meshycal.scheduling/proposal-v1`. Not an Object; a structured payload inside a SendClaim envelope.
+- **SchedulingAgent** — the MeshyCal domain agent. One per user per install.
+- **Reasoner** — pluggable backend (Anthropic / OpenAI / scripted) that turns a Proposal + CalendarObject into a verdict. MeshyCal-internal; not a Delegation Authoring SDK pattern.
 
 ## Build discipline
 
-1. **Depend on Mesherra; never reverse.** MeshyCal imports the mesherra SDK. Mesherra never imports MeshyCal.
-2. **Use Mesherra primitives, do not reinvent.** Identity, scoped disclosure, provenance, signing — always call into Mesherra. Never reimplement.
-3. **No real user data, ever.** Same rule as Mesherra (see ../mesherra/CLAUDE.md). Synthetic calendar entries only. This is non-negotiable; git history is forever.
-4. **No hardcoded values.** Same env-var discipline as Mesherra. Required vars documented in `.env.example`; fail fast at startup.
-5. **Domain logic lives here, not in Mesherra.** Calendar reading, slot proposal logic, OAuth integrations, UI — all on this side of the line.
-6. **Stack is not yet committed.** Mobile / web likely TypeScript; agent code likely Python (matches Mesherra SDK). Defer specifics to Phase 1 design.
-7. **Don't abstract MeshyCal prematurely.** MeshyCal is the first Delegation, hand-crafted against Mesherra's raw SDK. Resist the urge to extract "reusable Delegation helpers" from this codebase before a second Delegation exists. Two examples is the minimum from which useful templates can be derived; one is just a special case in disguise. If you find yourself writing code "so future Delegations can reuse it," stop — that code belongs in a separate Delegation Authoring SDK that doesn't exist yet, and it shouldn't exist until Delegation #2 forces real patterns to emerge. See `../mesherra/docs/ARCHITECTURE.md` section 12 item 10.
+1. **Depend on Mesherra; never reverse.** MeshyCal imports the Mesherra SDK. Mesherra never imports MeshyCal.
+2. **Use Mesherra primitives, do not reinvent.** Identity, scoped disclosure, provenance, signing, replay defense — always call into Mesherra.
+3. **No real user data, ever.** Synthetic only — names, calendars, emails, events. Hard rule. Git history is forever.
+4. **No hardcoded values.** Paths, hosts, ports, keys, principal IDs — all via environment. Required vars in `.env.example`. Fail fast on missing.
+5. **Domain logic lives here, not in Mesherra.** Calendar reading, slot proposal logic, calendar-integration adapters, UI surfaces — all on this side of the line.
+6. **CalendarObject never crosses the wire.** Only derivatives (Proposals, MeetingObject scoped views) cross. If a feature requires sending the calendar, the design is wrong.
+7. **MeetingObject has one canonical owner.** Mesherra's current architecture is single-owner for Objects. Do not invent multi-writer semantics in MeshyCal.
+8. **The SchedulingAgent never bypasses the airlock.** Outbound via `Mesherra.send_to()`; inbound via the registered callback. No direct A2A calls.
+9. **Don't abstract MeshyCal prematurely.** This is the first Delegation, hand-crafted against the raw SDK. Resist extracting "reusable Delegation helpers" before a second Delegation exists. The Reasoner factory is internal; it does not graduate to a shared utility until Delegation #2 needs the same shape unprompted. See `docs/ARCHITECTURE.md` §10 rule 4.
 
-## Status & build order
+## Where to read
 
-Pre-alpha. Documentation-first. No production code yet.
+- `docs/ARCHITECTURE.md` — full MeshyCal spec, Object classes, layer semantics, negotiation flow, open questions
+- `../mesherra/docs/ARCHITECTURE.md` — Mesherra primitive specifications MeshyCal builds on
+- `../mesherra/docs/STRATEGY.md` — strategic framing; §5 covers MeshyCal as reference implementation, not as scheduling product
 
-Phase 1 of Mesherra ships provenance (per `../mesherra/docs/ARCHITECTURE.md` section 12). MeshyCal's first deliverable is the corresponding demo: two scheduling agents on localhost, hardcoded identities, deterministic slot picking (no LLM), exchanging signed proposals and producing matching residue entries.
+## Current status
 
-Subsequent MeshyCal work tracks Mesherra's build order:
-- Phase 1 (Mesherra provenance) → MeshyCal localhost two-agent demo ✅ shipped
-- Phase 2 (Mesherra identity, shipped in two slices)
-    - 2a: replay-defense hardening of Phase 1 (nonce + clock-skew + ledger dedup) ✅ shipped
-    - 2b: live signed Directory in the demo loop (in-process; cross-machine would work with the same `HTTPDirectoryClient` unchanged but is not exercised here) ✅ shipped
-- Phase 3 (Mesherra scoped disclosure) ✅ shipped. Per-principal signed PolicyStore wired into both gateways; default MeshyCal template blocks `calendar_titles` + `attendee_emails` outbound. Demo's SPEC §5 assertions #15 and #16 prove A's emit Residue and B's receive Residue both reference the scoped hash, and the rich-payload hash appears in zero ledger entries. Force-injection regression (#17) lives in `demos/phase_1/tests/test_run_demo.py::TestAssertion17ForceInjection`.
+The MeshyCal package (`meshycal/`) implements CalendarObject, MeetingObject, SchedulingAgent, policy template, and reasoners against the Mesherra SDK. The full §8 negotiation works end-to-end: PROPOSAL exchange → ACCEPTANCE → owner-side MeetingObject creation → LIVE promotion to counterpart → counterpart subscribes and fetches initial state → both calendars hold the booking. Verified by `meshycal/tests/test_meeting_object_roundtrip.py` against real HTTP listeners.
 
-The invitee experience (frictionless guest principal for the second user) is the hardest MeshyCal problem and is deferred to Phase 1.5 per Mesherra's open design questions.
+Lagging the target architecture: `delegation.json` manifest, Schema Registry wiring, invitee identity flow. See `docs/ARCHITECTURE.md` §11 for the gap table. The MeetingObject keystone gap is closed.
+
+The `demos/` directory contains scaffolding from earlier development. It is not the organizing structure for MeshyCal — the Delegation contract in `docs/ARCHITECTURE.md` §2 is. Demos will be re-homed (Phase 1 → `tests/e2e/`; Phase 4 prototype → out-of-tree) as the production package matures. The sandbox runner's in-process simulation opts into the `SchedulingAgent(single_process_mode=True)` fallback that books locally without LIVE promotion (no HTTP listener available); production callers leave the flag default-False and start a listener.

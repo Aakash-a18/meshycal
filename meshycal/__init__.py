@@ -33,6 +33,7 @@ from meshycal.policy_template import (
 )
 from meshycal.reasoners import (
     AnthropicReasoner,
+    OpenAICompatibleReasoner,
     ProposalVerdict,
     SchedulingReasoner,
     ScriptedReasoner,
@@ -48,6 +49,7 @@ __all__ = [
     "SchedulingReasoner",
     "ScriptedReasoner",
     "AnthropicReasoner",
+    "OpenAICompatibleReasoner",
     "ProposalVerdict",
     "build_reasoner",
     "reasoner_label",

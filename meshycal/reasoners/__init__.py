@@ -10,10 +10,12 @@ inbound handler.
 from meshycal.reasoners.anthropic import AnthropicReasoner
 from meshycal.reasoners.base import ProposalVerdict, SchedulingReasoner
 from meshycal.reasoners.factory import build_reasoner, reasoner_label
+from meshycal.reasoners.openai_compatible import OpenAICompatibleReasoner
 from meshycal.reasoners.scripted import ScriptedReasoner
 
 __all__ = [
     "AnthropicReasoner",
+    "OpenAICompatibleReasoner",
     "ProposalVerdict",
     "SchedulingReasoner",
     "ScriptedReasoner",

@@ -15,6 +15,7 @@ import pytest
 
 from mesherra.crypto.primitives import Signer, canonical_json, content_hash
 from mesherra.identity import StaticDirectoryClient
+from mesherra.object.store import ObjectStore
 from mesherra.policy import PolicyStore, sign_policy_doc
 from mesherra.provenance.ledger import ProvenanceLedger
 
@@ -31,36 +32,6 @@ def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return int(s.getsockname()[1])
-
-
-async def _wire_agent(td: Path, principal_id: str, display_name: str,
-                       events: list[CalendarEvent], directory: StaticDirectoryClient,
-                       label: str) -> tuple[SchedulingAgent, Signer]:
-    signer = Signer.generate()
-    calendar = CalendarObject(owner_principal_id=principal_id, events=events)
-    policy_store = PolicyStore(
-        db_path=td / f"{label}_policy.sqlite",
-        principal_id=principal_id,
-        public_key_b64=signer.public_key_b64(),
-    )
-    policy_store.save_signed(sign_policy_doc(
-        doc=build_policy_doc(principal_id=principal_id),
-        signer=signer,
-    ))
-    ledger = ProvenanceLedger(
-        db_path=td / f"{label}_ledger.sqlite",
-        ledger_owner=principal_id,
-    )
-    agent = SchedulingAgent(
-        calendar=calendar,
-        signer=signer,
-        policy_store=policy_store,
-        ledger=ledger,
-        directory=directory,
-        reasoner=ScriptedReasoner(),
-        display_name=display_name,
-    )
-    return agent, signer
 
 
 @pytest.mark.asyncio
@@ -87,8 +58,13 @@ async def test_two_agents_real_signed_exchange():
                 doc=build_policy_doc(principal_id=pid), signer=signer))
             ledger = ProvenanceLedger(
                 db_path=td / f"{label}_ledger.sqlite", ledger_owner=pid)
+            object_store = ObjectStore(
+                db_path=td / f"{label}_objects.sqlite",
+                owner_principal_id=pid,
+            )
             return SchedulingAgent(
                 calendar=cal, signer=signer, policy_store=store, ledger=ledger,
+                object_store=object_store,
                 directory=directory, reasoner=ScriptedReasoner(),
                 display_name=name,
             )
@@ -100,18 +76,21 @@ async def test_two_agents_real_signed_exchange():
                            [CalendarEvent(time="11:00", duration=30, title="focus")],
                            r_signer, "recipient")
 
-        port = _free_port()
-        handle = await recipient.start_listener(host="127.0.0.1", port=port)
+        sender_port = _free_port()
+        recipient_port = _free_port()
+        sender_handle = await sender.start_listener(host="127.0.0.1", port=sender_port)
+        recipient_handle = await recipient.start_listener(host="127.0.0.1", port=recipient_port)
         try:
             candidates = ["2026-05-26T13:00:00Z", "2026-05-26T14:00:00Z"]
             result = await sender.propose_meeting_to(
-                peer_url=f"http://127.0.0.1:{port}/",
+                peer_url=f"http://127.0.0.1:{recipient_port}/",
                 peer_principal_id="marius@test.local",
                 candidates=candidates,
                 duration_minutes=30,
             )
         finally:
-            await handle.stop()
+            await recipient_handle.stop()
+            await sender_handle.stop()
 
         # The hash invariant — central Mesherra check.
         sender_entries = list(sender.ledger.get_by_task(result.task_id))
@@ -126,14 +105,12 @@ async def test_two_agents_real_signed_exchange():
         )
         assert sender_emit.payload_hash == recipient_recv.payload_hash
 
-        # Recipient's reasoner accepted, so they booked it.
+        # Recipient's reasoner accepted (verdict observable even though
+        # the recipient no longer books locally on accept — booking now
+        # happens via the MeetingObject path; see
+        # test_meeting_object_roundtrip.py for the full flow).
         assert recipient.last_verdict is not None
         assert recipient.last_verdict.accept is True
-        # Recipient calendar gained an event at the chosen slot's HH:MM.
-        chosen = recipient.last_verdict.chosen_slot
-        assert chosen is not None
-        hhmm = chosen[11:16]  # "2026-05-26T13:00:00Z" → "13:00"
-        assert any(e.time == hhmm for e in recipient.calendar.events)
 
         sender.close()
         recipient.close()
@@ -166,9 +143,13 @@ async def test_agent_rich_payload_includes_blocked_fields():
         ledger = ProvenanceLedger(
             db_path=td / "l.sqlite", ledger_owner="x@test.local"
         )
+        object_store = ObjectStore(
+            db_path=td / "o.sqlite", owner_principal_id="x@test.local"
+        )
         directory = StaticDirectoryClient({"x@test.local": signer.public_key_b64()})
         agent = SchedulingAgent(
             calendar=cal, signer=signer, policy_store=store, ledger=ledger,
+            object_store=object_store,
             directory=directory, reasoner=ScriptedReasoner(),
             display_name="Tester",
         )

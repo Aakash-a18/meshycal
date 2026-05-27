@@ -27,6 +27,7 @@ from typing import Any
 
 from mesherra.crypto.primitives import Signer, canonical_json, content_hash
 from mesherra.identity import StaticDirectoryClient
+from mesherra.object.store import ObjectStore
 from mesherra.policy import PolicyStore, sign_policy_doc
 from mesherra.provenance.ledger import ProvenanceLedger
 
@@ -136,10 +137,16 @@ def _build_agent(
         ledger_owner=principal.id,
     )
 
+    object_store = ObjectStore(
+        db_path=td / f"{label}_objects.sqlite",
+        owner_principal_id=principal.id,
+    )
+
     reasoner = build_reasoner(
         provider=principal.reasoner.provider,
         model=principal.reasoner.model,
         api_key=api_key,
+        base_url=principal.reasoner.base_url or None,
     )
 
     return SchedulingAgent(
@@ -147,9 +154,16 @@ def _build_agent(
         signer=signer,
         policy_store=policy_store,
         ledger=ledger,
+        object_store=object_store,
         directory=directory,
         reasoner=reasoner,
         display_name=principal.display_name,
+        # Sandbox: in-process simulation that doesn't start the sender's
+        # listener. Opt in to the legacy "skip LIVE promotion" fallback;
+        # the keystone MeetingObject flow is exercised by
+        # meshycal/tests/test_meeting_object_roundtrip.py which uses
+        # real HTTP listeners on both sides.
+        single_process_mode=True,
     )
 
 
@@ -293,11 +307,13 @@ async def run_sandbox_two_party(
             provider=sender.reasoner.provider,
             model=sender.reasoner.model,
             api_key=api_keys.get(sender.id),
+            base_url=sender.reasoner.base_url or None,
         )
         recipient_label = reasoner_label(
             provider=recipient.reasoner.provider,
             model=recipient.reasoner.model,
             api_key=api_keys.get(recipient.id),
+            base_url=recipient.reasoner.base_url or None,
         )
 
         narrative = [

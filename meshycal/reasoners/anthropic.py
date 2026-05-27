@@ -51,7 +51,7 @@ class AnthropicReasoner:
             my_calendar=my_calendar,
             my_display_name=my_display_name,
         )
-        tool = {
+        tool: Any = {
             "name": self.TOOL_NAME,
             "description": (
                 f"Pick a meeting slot for {my_display_name} from the candidates. "
