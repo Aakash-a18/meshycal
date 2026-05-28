@@ -174,28 +174,6 @@ def test_counterparty_name_humanized_from_principal_id():
             agent.close()
 
 
-def test_submit_new_not_yet_implemented():
-    """M1.3 wires this. M1.1's adapter only handles the read path."""
-    from meshycal.api.models import NewMeetingRequest
-
-    with tempfile.TemporaryDirectory() as td_str:
-        td = Path(td_str)
-        agent = _build_agent(td, ALICE)
-        try:
-            inbox = SchedulingAgentInbox(agent)
-            req = NewMeetingRequest(
-                counterparty_principal_id=BOB,
-                counterparty_name="Bob",
-                duration_minutes=30,
-                when_window="next week",
-                title="Coffee chat",
-            )
-            with pytest.raises(NotImplementedError):
-                inbox.submit_new(req)
-        finally:
-            agent.close()
-
-
 def test_two_meetings_both_appear():
     """Multiple accepted meetings → multiple cards."""
     with tempfile.TemporaryDirectory() as td_str:

@@ -1,24 +1,22 @@
-"""SchedulingAgentInbox — Milestone 1 read adapter.
+"""SchedulingAgentInbox — Milestone 1 inbox adapter.
 
-Replaces the skeleton's `InMemoryInbox` with one that pulls data from a
-real `SchedulingAgent`'s substrate:
+Reads from a real `SchedulingAgent`'s substrate to produce
+renderer-facing MeetingCards/MeetingDetails. Writes via
+`SchedulingAgent.propose_meeting_to` (M1.3).
 
-- `MeetingObject`s in the `ObjectStore` → accepted meetings (the
-  canonical agreement exists).
-- Residue entries in the `ProvenanceLedger` → the ledger we show in
-  the receipt detail view.
+Covers both perspectives:
+- OWNER (initiator): MeetingObject lives in the agent's ObjectStore.
+- RECEIVER (counterpart): PromotionHandle is in the ObjectStore + a
+  cached MeetingObjectState was filled by
+  `subscribe_to_pending_meetings`.
 
-This adapter handles the OWNER perspective only (Alice, who initiated
-the negotiation, owns the MeetingObject). Receiver-side cards (Bob,
-who got a promoted handle) come in M1.3 when the submit path is wired.
-
-`submit_new()` is a stub here — wiring it to
-`SchedulingAgent.propose_meeting_to` is M1.3's job. The read path
-must work first.
+Cards from both sides carry the SAME id (the canonical object_id) so
+the two inboxes' detail URLs point at the same agreement.
 """
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from meshycal.api.models import (
@@ -31,34 +29,29 @@ from meshycal.api.models import (
 from meshycal.meeting_object import MEETING_OBJECT_SCHEMA, MeetingObjectState
 
 if TYPE_CHECKING:
-    from mesherra.models.primitives import Object, Residue
+    from mesherra.models.primitives import Object, PromotionHandle, Residue
 
+    from meshycal.api.principals import PrincipalSession
     from meshycal.scheduling_agent import SchedulingAgent
+
+
+# --- helpers ----------------------------------------------------------
 
 
 def _humanize_principal(principal_id: str) -> str:
     """`bob@sandbox.local` → `Bob`. Local part, capitalized."""
     local = principal_id.split("@", 1)[0]
-    # Hyphens and dots split into words; rejoin capitalized.
     return " ".join(p.capitalize() for p in local.replace(".", "-").split("-"))
 
 
 def _other_attendee(attendees: list[str], me: str) -> str:
-    """Pick the counterparty from MeetingObjectState.attendees."""
     for a in attendees:
         if a != me:
             return a
-    # Self-meeting (unusual but possible) — surface me as counterparty.
     return me
 
 
 def _residue_to_ledger_entry(residue: Residue, me: str) -> LedgerEntry:
-    """Project one Mesherra `Residue` into a renderer-facing LedgerEntry.
-
-    The substrate-shaped `operation` carries the raw Mesherra Operation
-    value; `action` is pre-composed prose for the default web renderer.
-    Second renderers may compose their own prose from `operation`.
-    """
     direction = residue.action_type.value  # "emit" | "receive"
     operation = residue.operation.value
     is_outbound = direction == "emit"
@@ -77,7 +70,7 @@ def _is_meeting_object(obj: Object) -> bool:
     return obj.schema_ref == MEETING_OBJECT_SCHEMA
 
 
-def _card_from_object(obj: Object, me: str) -> MeetingCard:
+def _card_from_owned_object(obj: Object, me: str) -> MeetingCard:
     state = MeetingObjectState.model_validate(obj.state)
     counterparty_pid = _other_attendee(state.attendees, me)
     return MeetingCard(
@@ -92,6 +85,45 @@ def _card_from_object(obj: Object, me: str) -> MeetingCard:
     )
 
 
+def _card_from_received_handle(
+    handle: PromotionHandle, state: MeetingObjectState, me: str,
+) -> MeetingCard:
+    # Receiver-side: the counterparty is the handle's owner. The scoped
+    # MeetingObjectState's `attendees` is NOT populated for receivers
+    # (it's excluded from MEETING_SCOPE_FIELDS by design — owner does
+    # not leak its full attendee list).
+    counterparty_pid = handle.owner
+    return MeetingCard(
+        id=handle.object_id,
+        status=MeetingStatus.ACCEPTED,
+        counterparty_name=_humanize_principal(counterparty_pid),
+        counterparty_principal_id=counterparty_pid,
+        proposed_time=state.time,
+        duration_minutes=state.duration_minutes,
+        title=state.title,
+        last_updated=handle.issued_at,
+    )
+
+
+def _generate_candidate_slots(when_window: str, count: int = 3) -> list[str]:
+    """Synthetic candidate generator for M1. Real LLM reasoners will
+    parse `when_window` semantically; we just pick `count` weekday
+    slots starting tomorrow."""
+    base = (datetime.now(UTC) + timedelta(days=1)).replace(
+        hour=14, minute=0, second=0, microsecond=0,
+    )
+    slots = []
+    cursor = base
+    while len(slots) < count:
+        if cursor.weekday() < 5:  # Mon-Fri only
+            slots.append(cursor.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        cursor += timedelta(days=1)
+    return slots
+
+
+# --- adapter ----------------------------------------------------------
+
+
 class SchedulingAgentInbox:
     """Reads inbox state from a real SchedulingAgent."""
 
@@ -100,30 +132,51 @@ class SchedulingAgentInbox:
 
     def list_cards(self) -> list[MeetingCard]:
         me = self._agent.principal_id
-        cards = [
-            _card_from_object(obj, me)
+        cards: list[MeetingCard] = [
+            _card_from_owned_object(obj, me)
             for obj in self._agent.objects.list()
             if _is_meeting_object(obj)
         ]
-        # Owner-only for M1.1; pending and declined will pull from
-        # the proposal_store + ledger in M1.3.
+        # Receiver-side: PromotionHandles whose state we've fetched.
+        cached_states = self._agent.received_meeting_states
+        for handle in self._agent.objects.list_received_handles():
+            if handle.schema_ref != MEETING_OBJECT_SCHEMA:
+                continue
+            state = cached_states.get(handle.promotion_id)
+            if state is None:
+                # Not yet subscribed/fetched. The caller is expected to
+                # have triggered subscribe_to_pending_meetings before
+                # reading the inbox.
+                continue
+            cards.append(_card_from_received_handle(handle, state, me))
         return cards
 
     def find_detail(self, meeting_id: str) -> MeetingDetail | None:
         me = self._agent.principal_id
+        # Owner side first.
         try:
             obj = self._agent.objects.get(meeting_id)
         except Exception:
-            return None
-        if not _is_meeting_object(obj):
-            return None
+            obj = None
+        if obj is not None and _is_meeting_object(obj):
+            return self._detail_from_owned(obj, me)
+        # Receiver side.
+        for handle in self._agent.objects.list_received_handles():
+            if handle.object_id != meeting_id:
+                continue
+            if handle.schema_ref != MEETING_OBJECT_SCHEMA:
+                continue
+            state = self._agent.received_meeting_states.get(handle.promotion_id)
+            if state is None:
+                continue
+            return self._detail_from_received(handle, state, me)
+        return None
+
+    def _detail_from_owned(self, obj: Object, me: str) -> MeetingDetail:
         state = MeetingObjectState.model_validate(obj.state)
         counterparty_pid = _other_attendee(state.attendees, me)
         ledger_entries: list[LedgerEntry] = []
         if state.provenance_pointer:
-            # Pull the residue chain that backed this meeting's
-            # negotiation. Only present when the MeetingObject came
-            # from a real propose_meeting_to flow.
             for residue in self._agent.ledger.get_by_context(
                 state.provenance_pointer
             ):
@@ -140,15 +193,90 @@ class SchedulingAgentInbox:
             agreement_hash=state.agreement_hash,
             ledger=ledger_entries,
             reasoning=(
-                f"Agreement signed. Both your and "
-                f"{_humanize_principal(counterparty_pid)}'s agents see "
-                "the same canonical record."
+                f"You proposed; {_humanize_principal(counterparty_pid)}'s "
+                "agent accepted. Both sides share the same signed agreement."
             ),
         )
 
-    def submit_new(self, req: NewMeetingRequest) -> MeetingDetail:
-        """Wired to SchedulingAgent.propose_meeting_to in M1.3."""
-        raise NotImplementedError(
-            "M1.3 wires submit to SchedulingAgent.propose_meeting_to. "
-            "M1.1 only implements the read adapter."
+    def _detail_from_received(
+        self, handle: PromotionHandle, state: MeetingObjectState, me: str,
+    ) -> MeetingDetail:
+        counterparty_pid = handle.owner
+        ledger_entries: list[LedgerEntry] = []
+        if state.provenance_pointer:
+            for residue in self._agent.ledger.get_by_context(
+                state.provenance_pointer
+            ):
+                ledger_entries.append(_residue_to_ledger_entry(residue, me))
+        return MeetingDetail(
+            id=handle.object_id,
+            status=MeetingStatus.ACCEPTED,
+            counterparty_name=_humanize_principal(counterparty_pid),
+            counterparty_principal_id=counterparty_pid,
+            proposed_time=state.time,
+            duration_minutes=state.duration_minutes,
+            title=state.title,
+            last_updated=handle.issued_at,
+            agreement_hash=state.agreement_hash,
+            ledger=ledger_entries,
+            reasoning=(
+                f"{_humanize_principal(counterparty_pid)} proposed; your "
+                "agent accepted. Both sides share the same signed agreement."
+            ),
         )
+
+    async def submit_new(
+        self,
+        req: NewMeetingRequest,
+        *,
+        peer_session: PrincipalSession,
+    ) -> MeetingDetail:
+        """Drive a real negotiation through the agent.
+
+        `peer_session` is the counterparty's PrincipalSession in the
+        same process — needed because the agent has to (a) know the
+        peer's listener URL and (b) trigger `subscribe_to_pending_meetings`
+        on the peer side so the receiver inbox sees the agreement
+        immediately.
+
+        M2 replaces the `peer_session` parameter with a directory
+        lookup over real principals.
+        """
+        if peer_session.listener_url is None:
+            raise RuntimeError(
+                f"counterparty {peer_session.principal_id} has no listener URL — "
+                "the registry's start_all_listeners() must run before submit."
+            )
+        candidates = _generate_candidate_slots(req.when_window)
+        await self._agent.propose_meeting_to(
+            peer_url=peer_session.listener_url,
+            peer_principal_id=peer_session.principal_id,
+            candidates=candidates,
+            duration_minutes=req.duration_minutes,
+        )
+        # Trigger receiver-side subscribe + fetch so both inboxes
+        # render the agreement immediately.
+        if self._agent.my_url is not None:
+            await peer_session.agent.subscribe_to_pending_meetings(
+                peer_url=self._agent.my_url,
+                my_url=peer_session.listener_url,
+            )
+        # Find the freshly-created MeetingObject — newest one with
+        # this counterparty as the other attendee.
+        me = self._agent.principal_id
+        candidates_objs = [
+            obj for obj in self._agent.objects.list()
+            if _is_meeting_object(obj)
+            and peer_session.principal_id in MeetingObjectState.model_validate(
+                obj.state
+            ).attendees
+        ]
+        if not candidates_objs:
+            raise RuntimeError(
+                "propose_meeting_to returned but no MeetingObject "
+                "was created — counterparty likely rejected."
+            )
+        newest = max(candidates_objs, key=lambda o: o.updated_at)
+        detail = self.find_detail(newest.object_id)
+        assert detail is not None
+        return detail

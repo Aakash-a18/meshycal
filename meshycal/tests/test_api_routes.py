@@ -56,22 +56,6 @@ def test_get_meeting_404_when_not_in_inbox(sandbox_client: TestClient):
     assert response.status_code == 404
 
 
-def test_submit_returns_501_until_m1_3_wires_it(sandbox_client: TestClient):
-    """M1.3 wires submit to SchedulingAgent.propose_meeting_to.
-    Until then, surface clearly so the form shows a real error."""
-    response = sandbox_client.post(
-        "/api/meetings?as=alice",
-        json={
-            "counterparty_principal_id": "bob@sandbox.local",
-            "counterparty_name": "Bob",
-            "duration_minutes": 30,
-            "when_window": "next week",
-            "title": "Coffee chat",
-        },
-    )
-    assert response.status_code == 501
-
-
 def test_principals_have_listener_urls_after_lifespan(sandbox_client: TestClient):
     """The lifespan should have started listeners on both principals so
     they can talk to each other when M1.3 lands."""

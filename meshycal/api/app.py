@@ -132,11 +132,14 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
         as_: str | None = Query(None, alias="as"),
     ) -> MeetingCard:
         sess = _get_session(request, as_)
-        try:
-            detail = sess.inbox.submit_new(req)
-        except NotImplementedError as e:
-            # M1.3 wires this. Until then, surface clearly.
-            raise HTTPException(status_code=501, detail=str(e))
+        registry: PrincipalRegistry = request.app.state.registry
+        peer = registry.get(req.counterparty_principal_id)
+        if peer is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"unknown counterparty: {req.counterparty_principal_id}",
+            )
+        detail = await sess.inbox.submit_new(req, peer_session=peer)
         return MeetingCard.model_validate(
             detail.model_dump(include=set(MeetingCard.model_fields.keys()))
         )

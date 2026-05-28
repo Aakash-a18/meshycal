@@ -102,6 +102,13 @@ class SchedulingAgent:
         # already subscribed+fetched+booked. Idempotency for
         # subscribe_to_pending_meetings.
         self._processed_meeting_handles: set[str] = set()
+        # Receiver-side cache of fetched MeetingObjectState by promotion_id.
+        # Populated by subscribe_to_pending_meetings after the SDK
+        # fetch_object call. The cache lets a renderer (or anyone reading
+        # the agent's substrate) show the agreed slot/title/hash without
+        # re-fetching from the owner on every read. Lost on restart —
+        # M2's persistent storage stage will materialize this in SQLite.
+        self._received_meeting_states: dict[str, MeetingObjectState] = {}
         # Listener URL — populated by start_listener. Carried so the
         # SchedulingAgent can advertise its own URL in subscribe requests
         # (so owners know where to push) and in propose_meeting_to (so
@@ -143,6 +150,13 @@ class SchedulingAgent:
         """The listener URL this agent is reachable at. None until
         :meth:`start_listener` is called."""
         return self._my_url
+
+    @property
+    def received_meeting_states(self) -> dict[str, MeetingObjectState]:
+        """Receiver-side cache of fetched MeetingObjectStates by
+        promotion_id. Read-only copy. Populated by
+        :meth:`subscribe_to_pending_meetings`."""
+        return dict(self._received_meeting_states)
 
     # --- network lifecycle --------------------------------------------
 
@@ -419,6 +433,11 @@ class SchedulingAgent:
                 handle=handle, peer_url=peer_url,
             )
             state = MeetingObjectState.model_validate(initial_state_dict)
+
+            # Cache the fetched state so renderers (and other consumers
+            # of this agent's substrate) can read it without re-fetching
+            # from the owner on every inbox render.
+            self._received_meeting_states[handle.promotion_id] = state
 
             # Book on this side's calendar.
             hhmm = _hhmm_from_iso(state.time)
