@@ -49,6 +49,28 @@ MeshyCal-specific terms:
 
 The MeshyCal package (`meshycal/`) implements CalendarObject, MeetingObject, SchedulingAgent, policy template, and reasoners against the Mesherra SDK. The full §8 negotiation works end-to-end: PROPOSAL exchange → ACCEPTANCE → owner-side MeetingObject creation → LIVE promotion to counterpart → counterpart subscribes and fetches initial state → both calendars hold the booking. Verified by `meshycal/tests/test_meeting_object_roundtrip.py` against real HTTP listeners.
 
-Lagging the target architecture: `delegation.json` manifest, Schema Registry wiring, invitee identity flow. See `docs/ARCHITECTURE.md` §11 for the gap table. The MeetingObject keystone gap is closed.
+Lagging the target architecture: `delegation.json` manifest, Schema Registry wiring, invitee identity flow, Google Calendar adapter. See `docs/ARCHITECTURE.md` §11 for the gap table. The MeetingObject keystone gap is closed.
 
 The `demos/` directory contains scaffolding from earlier development. It is not the organizing structure for MeshyCal — the Delegation contract in `docs/ARCHITECTURE.md` §2 is. Demos will be re-homed (Phase 1 → `tests/e2e/`; Phase 4 prototype → out-of-tree) as the production package matures. The sandbox runner's in-process simulation opts into the `SchedulingAgent(single_process_mode=True)` fallback that books locally without LIVE promotion (no HTTP listener available); production callers leave the flag default-False and start a listener.
+
+## Web renderer (skeleton)
+
+The first realization of Delegation rule 4 ("UI manifest + renderer") lives in two new directories:
+
+- `meshycal/api/` — FastAPI app exposing a renderer-facing HTTP surface (`/api/meetings` list/detail, POST submit). Skeleton state returns synthetic data from `_fixtures.py`; step 4 swaps it for an adapter over per-principal `SchedulingAgent` + `ProvenanceLedger` + `ObjectStore`. CORS origins via `MESHYCAL_CORS_ORIGINS` (defaults to `http://localhost:3000`).
+- `web/` — Next.js 15 + Tailwind App Router app. Renders the inbox (list), receipt detail view, and "new meeting" form. Talks to `meshycal/api/` at `NEXT_PUBLIC_MESHYCAL_API_URL` (defaults to `http://localhost:8000`). Server components for read endpoints; client component for the form.
+
+The renderer is "disposable per host surface" (CLAUDE.md rule 4): the Next.js app is the **web** surface. Future surfaces (Slack card, email card, iOS app) would each ship their own renderer against the same `meshycal/api/` shapes.
+
+### Running locally
+
+```
+# Terminal 1 — backend (port 8000)
+uvicorn meshycal.api:create_app --factory --reload --port 8000
+
+# Terminal 2 — frontend (port 3000)
+cd web && npm install   # first run only
+cd web && npm run dev
+```
+
+Then open <http://localhost:3000/inbox>. Three synthetic cards (pending / accepted / declined) are seeded; submit one through the form and it appears with status `pending` in the in-memory inbox.
