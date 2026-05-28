@@ -19,3 +19,20 @@ class ApiSettings(BaseSettings):
         "falls back to 3001 if 3000 is taken, so both are allowed by default. "
         "JSON list in env: MESHYCAL_CORS_ORIGINS='[\"https://meshycal.com\"]'.",
     )
+
+    data_dir: str | None = Field(
+        default=None,
+        description=(
+            "Directory holding per-principal SQLite files (policy, ledger, "
+            "object_store, signer keys). Unset → ephemeral temp dir, wiped "
+            "between server restarts (M1 demo). Set in M2+ for persistence."
+        ),
+    )
+
+    default_principal_alias: str = Field(
+        default="alice",
+        description=(
+            "Principal alias used when a request omits `?as=<alias>`. The "
+            "web renderer respects this on the landing page."
+        ),
+    )

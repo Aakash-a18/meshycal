@@ -10,13 +10,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from meshycal.api import create_app
 from meshycal.api.settings import ApiSettings
-
-
-@pytest.fixture()
-def client() -> TestClient:
-    return TestClient(create_app())
 
 
 def test_default_settings_include_local_dev_origins():
@@ -32,8 +26,8 @@ def test_cors_origins_overridable_via_env(monkeypatch: pytest.MonkeyPatch):
     assert settings.cors_origins == ["https://meshycal.com"]
 
 
-def test_allowed_origin_gets_cors_header(client: TestClient):
-    response = client.get(
+def test_allowed_origin_gets_cors_header(sandbox_client: TestClient):
+    response = sandbox_client.get(
         "/api/meetings",
         headers={"Origin": "http://localhost:3000"},
     )
@@ -44,16 +38,16 @@ def test_allowed_origin_gets_cors_header(client: TestClient):
     )
 
 
-def test_unknown_origin_does_not_get_cors_header(client: TestClient):
-    response = client.get(
+def test_unknown_origin_does_not_get_cors_header(sandbox_client: TestClient):
+    response = sandbox_client.get(
         "/api/meetings",
         headers={"Origin": "http://evil.example"},
     )
     assert "access-control-allow-origin" not in response.headers
 
 
-def test_preflight_permits_post_from_dev_origin(client: TestClient):
-    response = client.options(
+def test_preflight_permits_post_from_dev_origin(sandbox_client: TestClient):
+    response = sandbox_client.options(
         "/api/meetings",
         headers={
             "Origin": "http://localhost:3000",
