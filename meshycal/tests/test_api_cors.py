@@ -19,9 +19,11 @@ def client() -> TestClient:
     return TestClient(create_app())
 
 
-def test_default_settings_include_local_dev_origin():
+def test_default_settings_include_local_dev_origins():
     settings = ApiSettings()
+    # 3000 is Next.js default; 3001 is the auto-fallback when 3000 is taken.
     assert "http://localhost:3000" in settings.cors_origins
+    assert "http://localhost:3001" in settings.cors_origins
 
 
 def test_cors_origins_overridable_via_env(monkeypatch: pytest.MonkeyPatch):
