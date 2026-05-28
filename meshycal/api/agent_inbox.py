@@ -16,7 +16,6 @@ the two inboxes' detail URLs point at the same agreement.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from meshycal.api.models import (
@@ -27,6 +26,7 @@ from meshycal.api.models import (
     NewMeetingRequest,
 )
 from meshycal.meeting_object import MEETING_OBJECT_SCHEMA, MeetingObjectState
+from meshycal.scheduling_agent import default_candidate_slots
 
 if TYPE_CHECKING:
     from mesherra.models.primitives import Object, PromotionHandle, Residue
@@ -103,22 +103,6 @@ def _card_from_received_handle(
         title=state.title,
         last_updated=handle.issued_at,
     )
-
-
-def _generate_candidate_slots(when_window: str, count: int = 3) -> list[str]:
-    """Synthetic candidate generator for M1. Real LLM reasoners will
-    parse `when_window` semantically; we just pick `count` weekday
-    slots starting tomorrow."""
-    base = (datetime.now(UTC) + timedelta(days=1)).replace(
-        hour=14, minute=0, second=0, microsecond=0,
-    )
-    slots = []
-    cursor = base
-    while len(slots) < count:
-        if cursor.weekday() < 5:  # Mon-Fri only
-            slots.append(cursor.strftime("%Y-%m-%dT%H:%M:%SZ"))
-        cursor += timedelta(days=1)
-    return slots
 
 
 # --- adapter ----------------------------------------------------------
@@ -247,7 +231,7 @@ class SchedulingAgentInbox:
                 f"counterparty {peer_session.principal_id} has no listener URL — "
                 "the registry's start_all_listeners() must run before submit."
             )
-        candidates = _generate_candidate_slots(req.when_window)
+        candidates = default_candidate_slots(req.when_window)
         await self._agent.propose_meeting_to(
             peer_url=peer_session.listener_url,
             peer_principal_id=peer_session.principal_id,

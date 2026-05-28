@@ -49,6 +49,33 @@ logger = logging.getLogger(__name__)
 
 PROMOTION_HANDLE_SCHEMA = "mesherra.object/promotion-handle-v1"
 
+
+def default_candidate_slots(
+    when_window: str, *, count: int = 3,
+) -> list[str]:
+    """Pick `count` weekday slots starting tomorrow at 14:00 UTC.
+
+    The naive default used when the caller (e.g. MeshyCal's
+    submit-meeting flow) doesn't yet have an LLM-backed reasoner that
+    can parse `when_window` semantically. M2's calendar-aware reasoner
+    will replace this with real intent parsing; the ScriptedReasoner
+    path keeps using these defaults.
+
+    Lives on the agent side (CLAUDE.md rule 5) so a future second
+    Delegation's renderer doesn't have to know what "a sensible
+    candidate slot" means for scheduling.
+    """
+    base = (datetime.now(UTC) + timedelta(days=1)).replace(
+        hour=14, minute=0, second=0, microsecond=0,
+    )
+    slots: list[str] = []
+    cursor = base
+    while len(slots) < count:
+        if cursor.weekday() < 5:  # Mon-Fri only
+            slots.append(cursor.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        cursor += timedelta(days=1)
+    return slots
+
 # Scoped fields the MeetingObject's live-reference promotion exposes to
 # the counterpart. The full MeetingObjectState is wider; per CLAUDE.md
 # Rule 5 / ARCH §3.2, only these fields cross the boundary by default.
