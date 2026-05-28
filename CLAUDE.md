@@ -42,6 +42,7 @@ MeshyCal-specific terms:
 ## Where to read
 
 - `docs/ARCHITECTURE.md` — full MeshyCal spec, Object classes, layer semantics, negotiation flow, open questions
+- `docs/ROADMAP.md` — what's next and in what order; 5 milestones from "show me the AI" to "launchable product"
 - `../mesherra/docs/ARCHITECTURE.md` — Mesherra primitive specifications MeshyCal builds on
 - `../mesherra/docs/STRATEGY.md` — strategic framing; §5 covers MeshyCal as reference implementation, not as scheduling product
 
@@ -65,12 +66,13 @@ The renderer is "disposable per host surface" (CLAUDE.md rule 4): the Next.js ap
 ### Running locally
 
 ```
-# Terminal 1 — backend (port 8000)
-uvicorn meshycal.api:create_app --factory --reload --port 8000
+# Terminal 1 — backend (port 8000). Use the venv-local uvicorn so you
+# don't need to activate the venv first.
+.venv/bin/uvicorn meshycal.api:create_app --factory --reload --port 8000
 
-# Terminal 2 — frontend (port 3000)
+# Terminal 2 — frontend (port 3000, falls back to 3001 if taken)
 cd web && npm install   # first run only
 cd web && npm run dev
 ```
 
-Then open <http://localhost:3000/inbox>. Three synthetic cards (pending / accepted / declined) are seeded; submit one through the form and it appears with status `pending` in the in-memory inbox.
+Then open whichever URL Next.js prints (`http://localhost:3000/inbox` or `:3001/inbox`). Three synthetic cards (pending / accepted / declined) are seeded; submit one through the form and it appears with status `pending` in the in-memory inbox.
