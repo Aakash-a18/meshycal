@@ -23,17 +23,22 @@ function formatTime(iso: string | null): string {
 
 export default async function MeetingDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ as?: string }>;
 }) {
   const { id } = await params;
-  const detail = await getMeeting(id);
+  const { as } = await searchParams;
+  const detail = await getMeeting(id, as);
   if (!detail) notFound();
+
+  const backHref = `/inbox${as ? `?as=${as}` : ""}`;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <Link
-        href="/inbox"
+        href={backHref}
         className="text-sm text-ink/60 underline-offset-4 hover:underline"
       >
         ← Back to inbox

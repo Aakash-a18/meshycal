@@ -1,35 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { submitMeeting } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { listPrincipals, submitMeeting } from "@/lib/api";
+import type { Principal } from "@/lib/types";
 
 const DURATIONS = [15, 30, 45, 60] as const;
 
-export default function NewMeetingPage() {
+export default function NewMeetingPageOuter() {
+  return (
+    <Suspense fallback={null}>
+      <NewMeetingPage />
+    </Suspense>
+  );
+}
+
+function NewMeetingPage() {
   const router = useRouter();
-  const [counterpartyName, setCounterpartyName] = useState("");
-  const [counterpartyPid, setCounterpartyPid] = useState("");
+  const searchParams = useSearchParams();
+  const as = searchParams.get("as") ?? undefined;
+
+  const [principals, setPrincipals] = useState<Principal[]>([]);
+  const [counterpartyAlias, setCounterpartyAlias] = useState<string>("");
   const [duration, setDuration] = useState<number>(30);
   const [whenWindow, setWhenWindow] = useState("");
   const [title, setTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    listPrincipals().then((all) => {
+      setPrincipals(all);
+      const other = all.find((p) => p.alias !== as) ?? all[0];
+      if (other) setCounterpartyAlias(other.alias);
+    });
+  }, [as]);
+
+  const counterparty = principals.find((p) => p.alias === counterpartyAlias);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!counterparty) return;
     setSubmitting(true);
     setError(null);
     try {
-      await submitMeeting({
-        counterparty_principal_id: counterpartyPid,
-        counterparty_name: counterpartyName,
-        duration_minutes: duration,
-        when_window: whenWindow,
-        title,
-      });
-      router.push("/inbox");
+      await submitMeeting(
+        {
+          counterparty_principal_id: counterparty.principal_id,
+          counterparty_name: counterparty.display_name,
+          duration_minutes: duration,
+          when_window: whenWindow,
+          title,
+        },
+        as
+      );
+      router.push(`/inbox${as ? `?as=${as}` : ""}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "submit failed");
@@ -37,10 +63,12 @@ export default function NewMeetingPage() {
     }
   }
 
+  const backHref = `/inbox${as ? `?as=${as}` : ""}`;
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <Link
-        href="/inbox"
+        href={backHref}
         className="text-sm text-ink/60 underline-offset-4 hover:underline"
       >
         ← Back to inbox
@@ -55,26 +83,21 @@ export default function NewMeetingPage() {
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <Field label="Who (name)">
-          <input
-            required
-            type="text"
-            value={counterpartyName}
-            onChange={(e) => setCounterpartyName(e.target.value)}
-            placeholder="Bob Lin"
+        <Field label="Who">
+          <select
+            value={counterpartyAlias}
+            onChange={(e) => setCounterpartyAlias(e.target.value)}
             className={inputClass}
-          />
-        </Field>
-
-        <Field label="Their address">
-          <input
-            required
-            type="text"
-            value={counterpartyPid}
-            onChange={(e) => setCounterpartyPid(e.target.value)}
-            placeholder="bob@sandbox.local"
-            className={inputClass}
-          />
+            disabled={principals.length === 0}
+          >
+            {principals
+              .filter((p) => p.alias !== as)
+              .map((p) => (
+                <option key={p.alias} value={p.alias}>
+                  {p.display_name} ({p.principal_id})
+                </option>
+              ))}
+          </select>
         </Field>
 
         <Field label="How long">
@@ -121,10 +144,10 @@ export default function NewMeetingPage() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !counterparty}
           className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-cream hover:bg-ink/90 disabled:opacity-50"
         >
-          {submitting ? "Sending…" : "Ask my butler"}
+          {submitting ? "Negotiating…" : "Ask my butler"}
         </button>
       </form>
     </main>

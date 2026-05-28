@@ -41,3 +41,9 @@ export interface NewMeetingRequest {
   when_window: string;
   title: string;
 }
+
+export interface Principal {
+  alias: string;
+  principal_id: string;
+  display_name: string;
+}

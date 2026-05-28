@@ -18,10 +18,17 @@ function formatTime(iso: string | null): string {
   }
 }
 
-export function MeetingRow({ card }: { card: MeetingCard }) {
+export function MeetingRow({
+  card,
+  viewingAs,
+}: {
+  card: MeetingCard;
+  viewingAs?: string;
+}) {
+  const href = `/inbox/${card.id}${viewingAs ? `?as=${viewingAs}` : ""}`;
   return (
     <Link
-      href={`/inbox/${card.id}`}
+      href={href}
       className="block rounded-xl border border-ink/10 bg-white px-5 py-4 shadow-sm transition hover:border-ink/30 hover:shadow"
     >
       <div className="flex items-center justify-between gap-4">
