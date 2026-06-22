@@ -26,13 +26,13 @@ jobs:
       # CI a MeshyCal branch against a specific mesherra branch, add a
       # workflow_dispatch input or coordinate via shared branch names.
       - name: Check out mesherra (sibling repo)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: Aakash-a18/mesherra
           path: mesherra
 
       - name: Check out meshycal
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: meshycal
 
